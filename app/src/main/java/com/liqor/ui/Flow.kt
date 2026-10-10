@@ -36,12 +36,14 @@ import kotlinx.coroutines.delay
 
 enum class AppScreen {
     Splash,
+    Intro,
     FirstLaunch,
     Loading,
     PositionsFound,
     NoPositions,
     CouldNotCheck,
     OverlayPermission,
+    BubbleOn,
     NotificationPermission,
     Home,
 }

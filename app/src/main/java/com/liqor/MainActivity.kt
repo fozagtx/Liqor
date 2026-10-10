@@ -23,7 +23,9 @@ import com.liqor.domain.Reading
 import com.liqor.domain.samplePosition
 import com.liqor.ui.CouldNotCheckScreen
 import com.liqor.ui.AppScreen
+import com.liqor.ui.BubbleOnScreen
 import com.liqor.ui.FirstLaunchScreen
+import com.liqor.ui.IntroScreen
 import com.liqor.ui.LocalReducedMotion
 import com.liqor.ui.HomeScreen
 import com.liqor.ui.LoadingScreen
@@ -64,6 +66,7 @@ class MainActivity : ComponentActivity() {
     private var appMode by mutableStateOf(Prefs.MODE_NONE)
     private var walletAddress by mutableStateOf<String?>(null)
     private var elapsedMs by mutableLongStateOf(0L)
+    private var overlayStillOff by mutableStateOf(false)
     private var waitingForOverlay = false
     private val notificationPermissionRequest =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -86,7 +89,8 @@ class MainActivity : ComponentActivity() {
                     BackHandler(
                         enabled = backStack.isNotEmpty() &&
                             screen != AppScreen.Loading &&
-                            screen != AppScreen.Home,
+                            screen != AppScreen.Home &&
+                            screen != AppScreen.BubbleOn,
                     ) {
                         forward = false
                         screen = backStack.removeAt(backStack.lastIndex)
@@ -94,7 +98,7 @@ class MainActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         delay(800)
                         if (appMode == Prefs.MODE_NONE) {
-                            navigateRoot(AppScreen.FirstLaunch, true)
+                            navigateRoot(AppScreen.Intro, true)
                         } else {
                             navigateRoot(AppScreen.Home, true)
                             if (appMode == Prefs.MODE_LIVE) refreshPositions(showLoading = false)
@@ -102,7 +106,10 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     LaunchedEffect(screen, appMode) {
-                        if (screen == AppScreen.FirstLaunch || appMode == Prefs.MODE_SAMPLE) {
+                        if (screen == AppScreen.Intro ||
+                            screen == AppScreen.FirstLaunch ||
+                            appMode == Prefs.MODE_SAMPLE
+                        ) {
                             val start = System.currentTimeMillis()
                             while (true) {
                                 elapsedMs = System.currentTimeMillis() - start
@@ -113,6 +120,10 @@ class MainActivity : ComponentActivity() {
                     ScreenHost(screen, forward) { current ->
                         when (current) {
                             AppScreen.Splash -> SplashScreen()
+                            AppScreen.Intro -> IntroScreen(
+                                sample = samplePosition.at(elapsedMs),
+                                onFinish = { navigate(AppScreen.FirstLaunch) },
+                            )
                             AppScreen.FirstLaunch -> FirstLaunchScreen(
                                 sample = samplePosition.at(elapsedMs),
                                 onConnect = ::connectWallet,
@@ -137,6 +148,10 @@ class MainActivity : ComponentActivity() {
                                 onOpenSettings = ::openOverlaySettings,
                                 onOpenAppInfo = ::openAppInfo,
                                 onNotNow = { navigateRoot(AppScreen.Home, true) },
+                                stillOff = overlayStillOff,
+                            )
+                            AppScreen.BubbleOn -> BubbleOnScreen(
+                                onNext = { navigate(AppScreen.NotificationPermission) },
                             )
                             AppScreen.NotificationPermission -> NotificationPermissionScreen(
                                 onAllow = ::requestNotificationPermission,
@@ -159,9 +174,15 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         refreshReducedMotion()
-        if (waitingForOverlay && Settings.canDrawOverlays(this)) {
+        if (waitingForOverlay) {
             waitingForOverlay = false
-            navigate(AppScreen.NotificationPermission)
+            if (Settings.canDrawOverlays(this)) {
+                overlayStillOff = false
+                startWatching()
+                navigate(AppScreen.BubbleOn)
+            } else if (screen == AppScreen.OverlayPermission) {
+                overlayStillOff = true
+            }
         }
     }
 
@@ -206,8 +227,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun beginOverlaySetup() {
+        overlayStillOff = false
         navigate(if (Settings.canDrawOverlays(this)) {
-            AppScreen.NotificationPermission
+            AppScreen.BubbleOn
         } else {
             AppScreen.OverlayPermission
         })

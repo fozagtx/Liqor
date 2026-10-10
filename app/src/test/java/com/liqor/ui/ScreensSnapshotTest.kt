@@ -60,7 +60,22 @@ class ScreensSnapshotTest {
 
     @Test
     fun overlayPermission() = captureScreen("overlay_permission") {
-        OverlayPermissionScreen(onOpenSettings = {}, onNotNow = {})
+        OverlayPermissionScreen(onOpenSettings = {}, onNotNow = {}, demoTimeMs = 1_100L)
+    }
+
+    @Test
+    fun overlayStillOff() = captureScreen("overlay_still_off") {
+        OverlayPermissionScreen(
+            onOpenSettings = {},
+            onNotNow = {},
+            stillOff = true,
+            demoTimeMs = 1_100L,
+        )
+    }
+
+    @Test
+    fun bubbleOn() = captureScreen("bubble_on") {
+        BubbleOnScreen(onNext = {})
     }
 
     @Test

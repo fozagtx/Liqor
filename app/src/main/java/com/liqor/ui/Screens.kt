@@ -1,6 +1,8 @@
 package com.liqor.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -20,6 +23,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -30,7 +37,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,6 +68,7 @@ import com.liqor.ui.theme.Ground
 import com.liqor.ui.theme.Hairline
 import com.liqor.ui.theme.Motion
 import com.liqor.ui.theme.Raised
+import com.liqor.ui.theme.Safe
 import com.liqor.ui.theme.Stale
 import com.liqor.ui.theme.TextPrimary
 import com.liqor.ui.theme.TextSecondary
@@ -412,6 +427,8 @@ fun OverlayPermissionScreen(
     onOpenSettings: () -> Unit,
     onOpenAppInfo: () -> Unit = {},
     onNotNow: () -> Unit,
+    stillOff: Boolean = false,
+    demoTimeMs: Long? = null,
 ) {
     Column(
         modifier = Modifier
@@ -422,9 +439,9 @@ fun OverlayPermissionScreen(
             .padding(horizontal = 22.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        StepHeader(stringResource(R.string.step_one_of_two), Modifier.stagger(0))
+        StepHeader(stringResource(R.string.step_one_of_two), 1, Modifier.stagger(0))
         Text(
-            stringResource(R.string.overlay_title),
+            stringResource(if (stillOff) R.string.overlay_still_off_title else R.string.overlay_setup_title),
             modifier = Modifier.stagger(1),
             color = TextPrimary,
             style = MaterialTheme.typography.headlineSmall.copy(
@@ -432,16 +449,28 @@ fun OverlayPermissionScreen(
                 letterSpacing = (-0.04).em,
             ),
         )
-        Text(
-            stringResource(R.string.overlay_body),
-            modifier = Modifier.stagger(2),
-            color = TextSecondary,
-            style = MaterialTheme.typography.bodyMedium,
+        if (stillOff) {
+            Text(
+                stringResource(R.string.overlay_still_off_body),
+                modifier = Modifier.stagger(2),
+                color = TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        OverlayStepsCard(Modifier.stagger(3))
+        PermissionSettingsCard(
+            Modifier.stagger(4),
+            demoTimeMs,
         )
-        PermissionSettingsCard(Modifier.stagger(3))
+        Text(
+            stringResource(R.string.overlay_settings_helper),
+            modifier = Modifier.stagger(5),
+            color = TextSecondary,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+        )
         Row(
             modifier = Modifier
-                .stagger(4)
+                .stagger(6)
                 .clip(RoundedCornerShape(14.dp))
                 .background(Raised)
                 .padding(12.dp),
@@ -461,21 +490,91 @@ fun OverlayPermissionScreen(
         }
         Spacer(Modifier.weight(1f))
         PillButton(
-            stringResource(R.string.open_settings),
+            stringResource(if (stillOff) R.string.try_again else R.string.open_settings),
             onClick = onOpenSettings,
-            modifier = Modifier.stagger(5),
-            leadingGlyph = stringResource(R.string.external_glyph),
+            modifier = Modifier.stagger(7),
+            leadingGlyph = if (stillOff) null else stringResource(R.string.external_glyph),
         )
         TextAction(
             stringResource(R.string.open_app_info),
             onOpenAppInfo,
-            Modifier.align(Alignment.CenterHorizontally).stagger(6),
+            Modifier.align(Alignment.CenterHorizontally).stagger(8),
         )
         TextAction(
-            stringResource(R.string.not_now),
+            stringResource(if (stillOff) R.string.overlay_continue_without_bubble else R.string.not_now),
             onNotNow,
-            Modifier.align(Alignment.CenterHorizontally).stagger(7),
+            Modifier.align(Alignment.CenterHorizontally).stagger(9),
         )
+    }
+}
+
+@Composable
+fun BubbleOnScreen(onNext: () -> Unit) {
+    val reducedMotion = LocalReducedMotion.current
+    val animatedScope = LocalAnimatedScope.current
+    val shouldAnimate = !reducedMotion && animatedScope != null
+    val sweep = remember { Animatable(if (shouldAnimate) 0f else 360f) }
+    LaunchedEffect(shouldAnimate) {
+        if (!shouldAnimate) {
+            sweep.snapTo(360f)
+        } else {
+            sweep.snapTo(0f)
+            sweep.animateTo(360f, tween(Motion.VerySlow, easing = Motion.SmoothOut))
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Ground)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 22.dp, vertical = 18.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        StepHeader(stringResource(R.string.step_one_of_two), 1, Modifier.stagger(0))
+        Spacer(Modifier.weight(1f))
+        Column(
+            Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(Modifier.size(96.dp), contentAlignment = Alignment.Center) {
+                Canvas(Modifier.fillMaxSize()) {
+                    drawArc(
+                        Safe,
+                        startAngle = -90f,
+                        sweepAngle = sweep.value,
+                        useCenter = false,
+                        topLeft = Offset(4.dp.toPx(), 4.dp.toPx()),
+                        size = Size(size.width - 8.dp.toPx(), size.height - 8.dp.toPx()),
+                        style = Stroke(5.dp.toPx(), cap = StrokeCap.Round),
+                    )
+                }
+                Text(
+                    stringResource(R.string.check_glyph),
+                    color = Safe,
+                    style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Medium),
+                )
+            }
+            Text(
+                stringResource(R.string.bubble_on_title),
+                modifier = Modifier.padding(top = 22.dp),
+                color = TextPrimary,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = (-0.04).em,
+                ),
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                stringResource(R.string.bubble_on_body),
+                modifier = Modifier.padding(top = 8.dp),
+                color = TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+            )
+        }
+        Spacer(Modifier.weight(1f))
+        PillButton(stringResource(R.string.bubble_on_next), onNext, Modifier.stagger(1))
     }
 }
 
@@ -489,9 +588,9 @@ fun NotificationPermissionScreen(onAllow: () -> Unit, onNotNow: () -> Unit) {
             .padding(horizontal = 22.dp, vertical = 18.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        StepHeader(stringResource(R.string.step_two_of_two), Modifier.stagger(0))
+        StepHeader(stringResource(R.string.step_two_of_two), 2, Modifier.stagger(0))
         Text(
-            stringResource(R.string.notification_title),
+            stringResource(R.string.notification_onboarding_title),
             modifier = Modifier.stagger(1),
             color = TextPrimary,
             style = MaterialTheme.typography.headlineSmall.copy(
@@ -500,7 +599,7 @@ fun NotificationPermissionScreen(onAllow: () -> Unit, onNotNow: () -> Unit) {
             ),
         )
         Text(
-            stringResource(R.string.notification_body),
+            stringResource(R.string.notification_onboarding_body),
             modifier = Modifier.stagger(2),
             color = TextSecondary,
             style = MaterialTheme.typography.bodyMedium,
@@ -516,6 +615,13 @@ fun NotificationPermissionScreen(onAllow: () -> Unit, onNotNow: () -> Unit) {
             stringResource(R.string.not_now),
             onNotNow,
             Modifier.align(Alignment.CenterHorizontally).stagger(5),
+        )
+        Text(
+            stringResource(R.string.notification_service_footnote),
+            modifier = Modifier.fillMaxWidth().stagger(6),
+            color = TextSecondary,
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, lineHeight = 10.sp),
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -591,23 +697,100 @@ private fun BrandHeader(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun StepHeader(step: String, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        BrandHeader()
-        Text(
-            step,
-            color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-        )
+private fun StepHeader(step: String, currentStep: Int, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BrandHeader()
+            Text(
+                step,
+                color = TextSecondary,
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+            )
+        }
+        Row(
+            Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            repeat(2) { index ->
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .height(3.dp)
+                        .clip(CircleShape)
+                        .background(if (index < currentStep) TextPrimary else Hairline),
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun PermissionSettingsCard(modifier: Modifier = Modifier) {
+private fun OverlayStepsCard(modifier: Modifier = Modifier) {
+    val steps = listOf(
+        R.string.overlay_step_one,
+        R.string.overlay_step_two,
+        R.string.overlay_step_three,
+    )
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = Raised,
+        shape = RoundedCornerShape(18.dp),
+        shadowElevation = 4.dp,
+    ) {
+        Column(
+            Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            steps.forEachIndexed { index, resource ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier.size(20.dp).clip(CircleShape).background(TextPrimary),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "${index + 1}",
+                            color = Raised,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        )
+                    }
+                    Text(
+                        stringResource(resource),
+                        Modifier.weight(1f).padding(start = 10.dp),
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PermissionSettingsCard(
+    modifier: Modifier = Modifier,
+    demoTimeMs: Long? = null,
+) {
+    val reducedMotion = LocalReducedMotion.current
+    val time = when {
+        reducedMotion -> 1_600f
+        demoTimeMs != null -> ((demoTimeMs % 1_600L + 1_600L) % 1_600L).toFloat()
+        else -> {
+            val transition = rememberInfiniteTransition(label = "overlay-switch")
+            transition.animateFloat(
+                initialValue = 0f,
+                targetValue = 1_600f,
+                animationSpec = infiniteRepeatable(tween(1_600, easing = LinearEasing)),
+                label = "overlay-switch-time",
+            ).value
+        }
+    }
+    val switchProgress = if (reducedMotion) 1f else permissionSwitchProgress(time)
+    val fingerProgress = permissionFingerProgress(time)
+    val fingerAlpha = if (reducedMotion) 0f else permissionFingerAlpha(time)
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = Raised,
@@ -626,18 +809,36 @@ private fun PermissionSettingsCard(modifier: Modifier = Modifier) {
                 color = TextPrimary,
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
             )
-            PermissionRow(stringResource(R.string.app_name), stringResource(R.string.overlay_allowed), true)
+            Box(Modifier.fillMaxWidth()) {
+                PermissionRow(
+                    stringResource(R.string.app_name),
+                    stringResource(R.string.overlay_allowed),
+                    switchProgress,
+                )
+                if (fingerAlpha > 0f) {
+                    Box(
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .offset(x = (-42f + 37f * fingerProgress).dp)
+                            .size(24.dp)
+                            .graphicsLayer(alpha = fingerAlpha)
+                            .clip(CircleShape)
+                            .background(TextPrimary.copy(alpha = 0.25f))
+                            .border(1.5.dp, TextPrimary.copy(alpha = 0.5f), CircleShape),
+                    )
+                }
+            }
             androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(1.dp)) {
                 drawLine(Hairline, androidx.compose.ui.geometry.Offset.Zero,
                     androidx.compose.ui.geometry.Offset(size.width, 0f), 1.dp.toPx())
             }
-            PermissionRow(stringResource(R.string.overlay_any_other_app), "", false)
+            PermissionRow(stringResource(R.string.overlay_any_other_app), "", 0f)
         }
     }
 }
 
 @Composable
-private fun PermissionRow(name: String, status: String, checked: Boolean) {
+private fun PermissionRow(name: String, status: String, switchProgress: Float) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -654,13 +855,47 @@ private fun PermissionRow(name: String, status: String, checked: Boolean) {
                 .width(34.dp)
                 .height(20.dp)
                 .clip(CircleShape)
-                .background(if (checked) TextPrimary else Ground)
-                .padding(2.dp),
-            contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
+                .background(lerp(Hairline, TextPrimary, switchProgress.coerceIn(0f, 1f))),
         ) {
-            Box(Modifier.size(16.dp).clip(CircleShape).background(Raised))
+            Box(
+                Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = (2.dp + 14.dp * switchProgress.coerceIn(0f, 1f)))
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(Raised),
+            )
         }
     }
+}
+
+private fun permissionSwitchProgress(time: Float): Float = when {
+    time < 600f -> 0f
+    time < 900f -> smoothStep((time - 600f) / 300f)
+    time < 1_250f -> 1f
+    time < 1_550f -> 1f - smoothStep((time - 1_250f) / 300f)
+    else -> 0f
+}
+
+private fun permissionFingerProgress(time: Float): Float = when {
+    time < 200f -> 0f
+    time < 600f -> smoothStep((time - 200f) / 400f)
+    time < 1_300f -> 1f
+    time < 1_550f -> 1f - smoothStep((time - 1_300f) / 250f)
+    else -> 0f
+}
+
+private fun permissionFingerAlpha(time: Float): Float = when {
+    time < 200f -> 0f
+    time < 450f -> smoothStep((time - 200f) / 250f)
+    time < 1_300f -> 1f
+    time < 1_600f -> 1f - smoothStep((time - 1_300f) / 300f)
+    else -> 0f
+}
+
+private fun smoothStep(value: Float): Float {
+    val t = value.coerceIn(0f, 1f)
+    return t * t * (3f - 2f * t)
 }
 
 @Composable

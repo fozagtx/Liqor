@@ -148,6 +148,7 @@ class WatchService : LifecycleService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
+        startStatusForeground()
         when (intent?.action) {
             ACTION_DETAILS -> {
                 prefs.hidden = false
@@ -676,7 +677,12 @@ class WatchService : LifecycleService() {
     }
 
     private fun updateStatusNotification() {
-        val text = when {
+        val text = statusNotificationText()
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.notify(STATUS_NOTIFICATION_ID, buildStatusNotification(text))
+    }
+
+    private fun statusNotificationText(): String = when {
             prefs.mode == Prefs.MODE_SAMPLE -> getString(R.string.status_sample)
             reading == Reading.NoPositions -> getString(R.string.status_all_clear)
             reading == Reading.CouldNotCheck -> getString(R.string.status_could_not_check)
@@ -684,15 +690,9 @@ class WatchService : LifecycleService() {
                 ?.let(::sentence) ?: getString(R.string.status_could_not_check)
             else -> getString(R.string.status_could_not_check)
         }
-        val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(STATUS_NOTIFICATION_ID, buildStatusNotification(text))
-    }
 
     private fun startStatusForeground() {
-        val notification = buildStatusNotification(
-            if (prefs.mode == Prefs.MODE_SAMPLE) getString(R.string.status_sample)
-            else getString(R.string.status_could_not_check),
-        )
+        val notification = buildStatusNotification(statusNotificationText())
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(
                 STATUS_NOTIFICATION_ID,
