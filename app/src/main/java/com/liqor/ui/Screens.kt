@@ -762,7 +762,11 @@ private fun NotificationPreview(sample: Watched, modifier: Modifier = Modifier) 
             SampleChip(Modifier.align(Alignment.TopEnd).padding(CardPadding.content))
             Box(
                 Modifier
-                    .size(width = IllustrationSize.phoneWidth, height = IllustrationSize.demoPhoneHeight),
+                    .size(
+                        width = IllustrationSize.phoneWidth,
+                        height = IllustrationSize.demoPhoneHeight - Space.xl,
+                    )
+                    .offset(y = Space.lg),
             ) {
                 Box(
                     Modifier
