@@ -5,6 +5,13 @@
     <string name="chevron_glyph">›</string>
     <string name="external_glyph">↗</string>
     <string name="sample_tag">SAMPLE</string>
+    <string name="bubble_tag_long">%1$s ↓</string>
+    <string name="bubble_tag_short">%1$s ↑</string>
+    <string name="bubble_content_description">%1$s %2$s, %3$s%% from liquidation</string>
+    <string name="bubble_stale_content_description">Stale reading. %1$s %2$s, %3$s%% from liquidation</string>
+    <string name="bubble_sample_content_description">Sample position. %1$s %2$s, %3$s%% from liquidation</string>
+    <string name="bubble_sample_description">Sample position</string>
+    <string name="bubble_unknown_content_description">Position distance unavailable</string>
     <string name="level_safe">Safe</string>
     <string name="level_caution">Caution</string>
     <string name="level_danger">Danger</string>

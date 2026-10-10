@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,13 +29,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.liqor.R
 import com.liqor.ui.BubbleState
 import com.liqor.ui.BubbleUi
@@ -48,6 +51,43 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
+    val asset = ui.asset
+    val side = ui.side
+    val tagText = when {
+        ui.state == BubbleState.Unknown || ui.state == BubbleState.Sample -> null
+        asset == null || asset.isBlank() -> null
+        side == "long" -> stringResource(R.string.bubble_tag_long, asset)
+        side == "short" -> stringResource(R.string.bubble_tag_short, asset)
+        else -> null
+    }
+    val bubbleDescription = when {
+        ui.state == BubbleState.Unknown ->
+            stringResource(R.string.bubble_unknown_content_description)
+        ui.state == BubbleState.Sample && asset != null && side != null ->
+            stringResource(
+                R.string.bubble_sample_content_description,
+                asset,
+                side,
+                ui.value,
+            )
+        ui.state == BubbleState.Sample -> stringResource(R.string.bubble_sample_description)
+        ui.state == BubbleState.Stale && asset != null && side != null ->
+            stringResource(
+                R.string.bubble_stale_content_description,
+                asset,
+                side,
+                ui.value,
+            )
+        ui.state == BubbleState.Stale ->
+            stringResource(R.string.bubble_unknown_content_description)
+        asset != null && side != null -> stringResource(
+            R.string.bubble_content_description,
+            asset,
+            side,
+            ui.value,
+        )
+        else -> stringResource(R.string.bubble_unknown_content_description)
+    }
     val color = when (ui.state) {
         BubbleState.Safe, BubbleState.Sample -> Safe
         BubbleState.Caution -> Caution
@@ -69,7 +109,9 @@ fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
         }
     }
     Column(
-        modifier = modifier,
+        modifier = modifier.clearAndSetSemantics {
+            contentDescription = bubbleDescription
+        },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
@@ -135,7 +177,7 @@ fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
                 Box(
                     Modifier
                         .align(Alignment.BottomEnd)
-                        .offset(x = 4.dp, y = 4.dp)
+                        .offset(x = 4.dp, y = (-4).dp)
                         .size(18.dp)
                         .clip(CircleShape)
                         .background(Stale)
@@ -162,6 +204,31 @@ fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
                 textAlign = TextAlign.Center,
             )
+        } else if (tagText != null) {
+            val tagBackground = if (ui.state == BubbleState.Stale) Stale else TextPrimary
+            val density = LocalDensity.current
+            CompositionLocalProvider(
+                LocalDensity provides Density(density.density, 1f),
+            ) {
+                Text(
+                    text = tagText,
+                    modifier = Modifier
+                        .offset(y = (-4).dp)
+                        .widthIn(max = 56.dp)
+                        .clip(CircleShape)
+                        .background(tagBackground)
+                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                    color = Raised,
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.08.em,
+                    ),
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

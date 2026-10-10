@@ -20,6 +20,8 @@ data class BubbleUi(
     val state: BubbleState,
     val cushion: Float,
     val animateDanger: Boolean = true,
+    val asset: String? = null,
+    val side: String? = null,
 )
 
 fun bubbleUi(
@@ -36,14 +38,26 @@ fun bubbleUi(
         return BubbleUi("–", BubbleState.Unknown, 0f)
     }
     if (freshness == Freshness.Stale) {
-        return BubbleUi(value, BubbleState.Stale, 1f - closest.travelled.toFloat())
+        return BubbleUi(
+            value,
+            BubbleState.Stale,
+            1f - closest.travelled.toFloat(),
+            asset = closest.position.asset,
+            side = closest.position.side,
+        )
     }
     val state = if (sample) {
         BubbleState.Sample
     } else {
         level.toBubbleState()
     }
-    return BubbleUi(value, state, 1f - closest.travelled.toFloat())
+    return BubbleUi(
+        value,
+        state,
+        1f - closest.travelled.toFloat(),
+        asset = closest.position.asset,
+        side = closest.position.side,
+    )
 }
 
 fun Level.toBubbleState(): BubbleState = when (this) {

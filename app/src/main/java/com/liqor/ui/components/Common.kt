@@ -150,8 +150,8 @@ fun BrandMark(modifier: Modifier = Modifier) {
         Canvas(Modifier.size(14.dp)) {
             drawArc(
                 Color.White,
-                -90f,
-                295f,
+                -30f,
+                300f,
                 false,
                 style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = StrokeCap.Round),
             )

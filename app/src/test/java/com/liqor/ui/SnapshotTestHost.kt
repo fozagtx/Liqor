@@ -64,7 +64,7 @@ fun capturePanel(
                 onOpenJupiter = {},
                 onMore = {},
                 expandedPosition = expandedPosition,
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 420.dp, end = 12.dp),
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 436.dp, end = 12.dp),
             )
         }
     }

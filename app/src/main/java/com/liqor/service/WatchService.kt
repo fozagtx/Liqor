@@ -276,6 +276,8 @@ class WatchService : LifecycleService() {
                 state = com.liqor.ui.BubbleState.Sample,
                 cushion = 1f - sampleWatched.travelled.toFloat(),
                 animateDanger = false,
+                asset = sampleWatched.position.asset,
+                side = sampleWatched.position.side,
             )
         } else {
             bubbleUi(reading, freshness)
@@ -303,8 +305,25 @@ class WatchService : LifecycleService() {
             val contentWidth = changed.width - 2 * padding
             val left = padding + ((contentWidth - diameter).coerceAtLeast(0) / 2)
             changed.systemGestureExclusionRects = listOf(
-                Rect(left, padding, left + diameter, padding + diameter),
+                Rect(left, padding, left + diameter, changed.height - padding),
             )
+            val params = bubbleParams
+            if (bubbleView === changed && params != null && changed.height > 0) {
+                val bounds = windowManager.currentWindowMetrics.bounds
+                val margin = dpToPixels(12)
+                val insets = windowManager.currentWindowMetrics.windowInsets
+                    .getInsets(WindowInsets.Type.systemBars())
+                val contentHeight = changed.height - 2 * padding
+                val minY = insets.top + margin - padding
+                val maxY = (
+                    bounds.height() - insets.bottom - contentHeight - margin - padding
+                ).coerceAtLeast(minY)
+                val clampedY = params.y.coerceIn(minY, maxY)
+                if (clampedY != params.y) {
+                    params.y = clampedY
+                    runCatching { windowManager.updateViewLayout(changed, params) }
+                }
+            }
         }
         view.setContent {
             com.liqor.ui.theme.LiqorTheme {
@@ -415,12 +434,13 @@ class WatchService : LifecycleService() {
         val margin = dpToPixels(12)
         val insets = windowManager.currentWindowMetrics.windowInsets
             .getInsets(WindowInsets.Type.systemBars())
-        val sampleTagHeight = if (prefs.mode == Prefs.MODE_SAMPLE) {
-            dpToPixels((16f * resources.configuration.fontScale + 8f).roundToInt())
-        } else {
-            0
+        val tagHeight = when {
+            bubbleUi.state == com.liqor.ui.BubbleState.Sample ->
+                dpToPixels((16f * resources.configuration.fontScale + 8f).roundToInt())
+            bubbleUi.asset != null && bubbleUi.side != null -> dpToPixels(20)
+            else -> 0
         }
-        val contentHeight = diameter + sampleTagHeight
+        val contentHeight = diameter + tagHeight
         val minY = insets.top + margin - padding
         val maxY = (
             bounds.height() - insets.bottom - contentHeight - margin - padding

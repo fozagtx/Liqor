@@ -75,6 +75,8 @@ private fun BubbleCaption(
     captionId = captionId,
     cushion = 1f - watched.travelled.toFloat(),
     modifier = modifier,
+    asset = watched.position.asset,
+    side = watched.position.side,
 )
 
 @Composable
@@ -92,10 +94,19 @@ private fun BubbleCaption(
     captionId: Int,
     cushion: Float,
     modifier: Modifier,
+    asset: String? = null,
+    side: String? = null,
 ) {
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Bubble(
-            BubbleUi(value, state, cushion = cushion, animateDanger = false),
+            BubbleUi(
+                value,
+                state,
+                cushion = cushion,
+                animateDanger = false,
+                asset = asset,
+                side = side,
+            ),
         )
         Text(
             text = stringResource(captionId),

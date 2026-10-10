@@ -75,8 +75,8 @@ fun SplashScreen() {
                 androidx.compose.foundation.Canvas(Modifier.size(42.dp)) {
                     drawArc(
                         color = Raised,
-                        startAngle = -90f,
-                        sweepAngle = 295f,
+                        startAngle = -30f,
+                        sweepAngle = 300f,
                         useCenter = false,
                         style = androidx.compose.ui.graphics.drawscope.Stroke(4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round),
                     )
