@@ -153,96 +153,100 @@ private fun IntroPage(
     Column(
         Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Row(
-            Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            BrandMark()
-            Text(
-                stringResource(R.string.app_name),
-                Modifier.padding(start = 7.dp),
-                color = TextPrimary,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            )
-            Spacer(Modifier.weight(1f))
-            if (page < 2) {
-                TextAction(stringResource(R.string.intro_skip), onSkip)
-            } else {
-                Spacer(Modifier.width(63.dp))
-            }
-        }
-
-        when (page) {
-            0 -> BeforeAfterIllustration(sample, settled, illustrationModifier)
-            1 -> CoverageIllustration(sample, settled, illustrationModifier)
-            else -> BubbleDemo(sample, demoTimeMs, illustrationModifier)
-        }
-
-        Text(
-            stringResource(
-                when (page) {
-                    0 -> R.string.intro_before_title
-                    1 -> R.string.intro_watches_title
-                    else -> R.string.intro_demo_title
-                },
-            ),
-            color = TextPrimary,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.04).em,
-            ),
-        )
-        Text(
-            stringResource(
-                when (page) {
-                    0 -> R.string.intro_before_body
-                    1 -> R.string.intro_watches_body
-                    else -> R.string.intro_demo_body
-                },
-            ),
-            color = TextSecondary,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-
-        if (page == 1) {
             Row(
-                Modifier
-                    .align(Alignment.Start)
-                    .clip(CircleShape)
-                    .background(Raised)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    Modifier.size(24.dp).clip(CircleShape).background(Safe),
-                    contentAlignment = Alignment.Center,
+                BrandMark()
+                Text(
+                    stringResource(R.string.app_name),
+                    Modifier.padding(start = 7.dp),
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                )
+                Spacer(Modifier.weight(1f))
+                if (page < 2) {
+                    TextAction(stringResource(R.string.intro_skip), onSkip)
+                } else {
+                    Spacer(Modifier.width(63.dp))
+                }
+            }
+
+            when (page) {
+                0 -> BeforeAfterIllustration(sample, settled, illustrationModifier)
+                1 -> CoverageIllustration(settled, illustrationModifier)
+                else -> BubbleDemo(sample, demoTimeMs, illustrationModifier)
+            }
+
+            Text(
+                stringResource(
+                    when (page) {
+                        0 -> R.string.intro_before_title
+                        1 -> R.string.intro_watches_title
+                        else -> R.string.intro_demo_title
+                    },
+                ),
+                color = TextPrimary,
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = (-0.04).em,
+                ),
+            )
+            Text(
+                stringResource(
+                    when (page) {
+                        0 -> R.string.intro_before_body
+                        1 -> R.string.intro_watches_body
+                        else -> R.string.intro_demo_body
+                    },
+                ),
+                color = TextSecondary,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+
+            if (page == 1) {
+                Row(
+                    Modifier
+                        .align(Alignment.Start)
+                        .clip(CircleShape)
+                        .background(Raised)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Box(
+                        Modifier.size(24.dp).clip(CircleShape).background(Safe),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            stringResource(R.string.check_glyph),
+                            color = Raised,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
+                        )
+                    }
                     Text(
-                        stringResource(R.string.check_glyph),
-                        color = Raised,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
+                        stringResource(R.string.feature_read_only),
+                        Modifier.padding(start = 8.dp),
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                     )
                 }
                 Text(
-                    stringResource(R.string.feature_read_only),
-                    Modifier.padding(start = 8.dp),
-                    color = TextPrimary,
+                    stringResource(R.string.intro_wallet_adapter),
+                    color = TextSecondary,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                 )
             }
-            Text(
-                stringResource(R.string.intro_wallet_adapter),
-                color = TextSecondary,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-            )
         }
 
-        Spacer(Modifier.height(2.dp))
+        Spacer(Modifier.height(14.dp))
         PagerDots(page)
+        Spacer(Modifier.height(14.dp))
         PillButton(
             stringResource(if (page == 2) R.string.intro_get_started else R.string.intro_continue),
             onContinue,
@@ -503,7 +507,6 @@ private fun LiquidatedEventCard(modifier: Modifier = Modifier) {
 
 @Composable
 private fun CoverageIllustration(
-    sample: Watched,
     settled: Boolean,
     modifier: Modifier,
 ) {
@@ -515,7 +518,7 @@ private fun CoverageIllustration(
     ) {
         Box {
             Column(
-                Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 36.dp, bottom = 14.dp),
+                Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(13.dp),
             ) {
                 Text(
@@ -563,7 +566,6 @@ private fun CoverageIllustration(
                     )
                 }
             }
-            SampleChip(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 10.dp))
         }
     }
 }
@@ -594,10 +596,12 @@ private fun FanCoinStack(assets: List<String>, settled: Boolean) {
     val reducedMotion = LocalReducedMotion.current
     val animatedScope = LocalAnimatedScope.current
     val shouldAnimate = !reducedMotion && animatedScope != null && settled
+    val stockStack = assets.all { it in stockAssets }
     val iconSize = 28.dp
-    val step = 20.dp
+    val diameter = if (stockStack) 34.dp else 32.dp
+    val step = if (stockStack) 27.dp else 20.dp
     Box(
-        Modifier.width(iconSize + step * (assets.size - 1)).height(32.dp),
+        Modifier.width(diameter + step * (assets.size - 1)).height(diameter),
     ) {
         assets.forEachIndexed { index, asset ->
             val progress = remember(asset) { Animatable(if (shouldAnimate) 0f else 1f) }
@@ -612,22 +616,38 @@ private fun FanCoinStack(assets: List<String>, settled: Boolean) {
                     progress.snapTo(0f)
                 }
             }
-            Box(
-                Modifier
-                    .offset(x = step * index * progress.value)
-                    .size(32.dp)
-                    .zIndex(index.toFloat())
-                    .graphicsLayer(alpha = progress.value)
-                    .clip(CircleShape)
-                    .background(Raised)
-                    .border(2.dp, Raised, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                CoinLogo(asset, iconSize)
+            if (stockStack) {
+                CoinLogo(
+                    asset,
+                    diameter,
+                    modifier = Modifier
+                        .offset(x = step * index * progress.value)
+                        .zIndex(index.toFloat())
+                        .graphicsLayer(alpha = progress.value),
+                    imageInset = 5.dp,
+                    containerColor = Raised,
+                    borderColor = Hairline,
+                )
+            } else {
+                Box(
+                    Modifier
+                        .offset(x = step * index * progress.value)
+                        .size(diameter)
+                        .zIndex(index.toFloat())
+                        .graphicsLayer(alpha = progress.value)
+                        .clip(CircleShape)
+                        .background(Raised)
+                        .border(2.dp, Raised, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CoinLogo(asset, iconSize)
+                }
             }
         }
     }
 }
+
+private val stockAssets = setOf("SPCX", "SNDK", "SKHYNIX")
 
 @Composable
 fun BubbleDemo(sample: Watched, timeMs: Long?, modifier: Modifier = Modifier) {
@@ -702,20 +722,6 @@ fun BubbleDemo(sample: Watched, timeMs: Long?, modifier: Modifier = Modifier) {
             textAlign = TextAlign.Center,
         )
     }
-    Row(
-        Modifier.fillMaxWidth().padding(top = 8.dp),
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        repeat(4) { index ->
-            Box(
-                Modifier
-                    .padding(horizontal = 3.dp)
-                    .size(width = 22.dp, height = 3.dp)
-                    .clip(CircleShape)
-                    .background(if (index == captionIndex) TextPrimary else Hairline),
-            )
-        }
-    }
 }
 
 @Composable
@@ -762,12 +768,12 @@ private fun AnimatedDemoPhone(sample: Watched, time: Float, modifier: Modifier =
             DemoPanel(
                 sample,
                 Modifier
-                    .offset(x = 34.dp, y = 91.dp)
+                    .offset(x = (width - 175f).dp, y = 190.dp)
                     .graphicsLayer {
                         alpha = panelProgress
                         scaleX = 0.6f + 0.4f * panelProgress
                         scaleY = 0.6f + 0.4f * panelProgress
-                        transformOrigin = TransformOrigin(0.94f, 0.08f)
+                        transformOrigin = TransformOrigin(1f, 0f)
                     },
             )
         }
@@ -795,11 +801,11 @@ private fun AnimatedDemoPhone(sample: Watched, time: Float, modifier: Modifier =
                 .graphicsLayer {
                     scaleX = bubbleScale
                     scaleY = bubbleScale
-                    alpha = bubbleAlpha * (1f - panelProgress)
+                    alpha = bubbleAlpha
                 },
         )
 
-        val finger = fingerPosition(time, width, height)
+        val finger = fingerPosition(time, width, height, bubbleX, bubbleY)
         if (finger.alpha > 0f) {
             Finger(
                 Modifier
@@ -1002,27 +1008,30 @@ private data class FingerPosition(
     val alpha: Float = 1f,
 )
 
-private fun fingerPosition(time: Float, width: Float, height: Float): FingerPosition {
+private fun fingerPosition(
+    time: Float,
+    width: Float,
+    height: Float,
+    bubbleX: Float,
+    bubbleY: Float,
+): FingerPosition {
     return when {
         time < 1_200f -> FingerPosition(width * 0.48f, height * 0.7f, alpha = 0f)
         time < 1_550f -> {
             val p = smooth((time - 1_200f) / 350f)
-            FingerPosition(lerp(width * 0.48f, width - 47f, p), lerp(height * 0.7f, 120f, p))
+            FingerPosition(lerp(width * 0.48f, width - 47f, p), lerp(height * 0.7f, 134f, p))
         }
         time < 2_800f -> {
             val press = smooth(((time - 1_650f) / 150f).coerceIn(0f, 1f))
-            val fade = smooth(((time - 1_800f) / 200f).coerceIn(0f, 1f))
-            FingerPosition(width - 47f, 120f, 1f - press * 0.15f, 1f - fade)
+            FingerPosition(width - 47f, 134f, 1f - press * 0.15f)
         }
-        time < 4_600f -> {
-            val p = smooth(((time - 2_800f) / 1_800f).coerceIn(0f, 1f))
-            FingerPosition(lerp(width - 47f, 8f, p), 120f)
-        }
-        time < 6_400f -> {
-            val p = smooth(((time - 4_600f) / 1_800f).coerceIn(0f, 1f))
-            FingerPosition(lerp(8f, width * 0.5f + 8f, p), lerp(120f, height - 57f, p))
-        }
-        else -> FingerPosition(width * 0.5f + 8f, height - 57f, alpha = 1f - smooth((time - 6_400f) / 600f))
+        time < 4_600f -> FingerPosition(bubbleX + 16f, bubbleY + 22f)
+        time < 6_400f -> FingerPosition(bubbleX + 16f, bubbleY + 38f)
+        else -> FingerPosition(
+            bubbleX + 16f,
+            bubbleY + 38f,
+            alpha = 1f - smooth((time - 6_400f) / 600f),
+        )
     }
 }
 

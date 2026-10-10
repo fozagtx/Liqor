@@ -549,11 +549,23 @@ fun BubbleOnScreen(onNext: () -> Unit) {
                         style = Stroke(5.dp.toPx(), cap = StrokeCap.Round),
                     )
                 }
-                Text(
-                    stringResource(R.string.check_glyph),
-                    color = Safe,
-                    style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Medium),
-                )
+                Canvas(Modifier.size(34.dp)) {
+                    val checkCorner = Offset(size.width * 0.42f, size.height * 0.76f)
+                    drawLine(
+                        Safe,
+                        Offset(size.width * 0.16f, size.height * 0.52f),
+                        checkCorner,
+                        strokeWidth = 5.dp.toPx(),
+                        cap = StrokeCap.Round,
+                    )
+                    drawLine(
+                        Safe,
+                        checkCorner,
+                        Offset(size.width * 0.84f, size.height * 0.24f),
+                        strokeWidth = 5.dp.toPx(),
+                        cap = StrokeCap.Round,
+                    )
+                }
             }
             Text(
                 stringResource(R.string.bubble_on_title),
@@ -888,8 +900,8 @@ private fun permissionFingerProgress(time: Float): Float = when {
 private fun permissionFingerAlpha(time: Float): Float = when {
     time < 200f -> 0f
     time < 450f -> smoothStep((time - 200f) / 250f)
-    time < 1_300f -> 1f
-    time < 1_600f -> 1f - smoothStep((time - 1_300f) / 300f)
+    time < 900f -> 1f
+    time < 1_100f -> 1f - smoothStep((time - 900f) / 200f)
     else -> 0f
 }
 
