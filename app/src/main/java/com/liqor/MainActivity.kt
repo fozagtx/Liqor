@@ -154,6 +154,7 @@ class MainActivity : ComponentActivity() {
                                 onNext = { navigate(AppScreen.NotificationPermission) },
                             )
                             AppScreen.NotificationPermission -> NotificationPermissionScreen(
+                                sample = samplePosition.at(elapsedMs),
                                 onAllow = ::requestNotificationPermission,
                                 onNotNow = ::startServiceAndShowHome,
                             )

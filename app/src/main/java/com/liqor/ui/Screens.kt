@@ -53,6 +53,7 @@ import com.liqor.domain.Reading
 import com.liqor.domain.Watched
 import com.liqor.domain.distanceText
 import com.liqor.ui.components.BrandMark
+import com.liqor.ui.components.Bubble
 import com.liqor.ui.components.CoinLogo
 import com.liqor.ui.components.FormTemplate
 import com.liqor.ui.components.HeroTemplate
@@ -466,7 +467,7 @@ fun BubbleOnScreen(onNext: () -> Unit) {
 }
 
 @Composable
-fun NotificationPermissionScreen(onAllow: () -> Unit, onNotNow: () -> Unit) {
+fun NotificationPermissionScreen(sample: Watched, onAllow: () -> Unit, onNotNow: () -> Unit) {
     HeroTemplate(
         title = stringResource(R.string.notification_onboarding_title),
         body = stringResource(R.string.notification_onboarding_body),
@@ -478,7 +479,7 @@ fun NotificationPermissionScreen(onAllow: () -> Unit, onNotNow: () -> Unit) {
             TextAction(stringResource(R.string.not_now), onNotNow)
         },
         illustration = {
-            NotificationPreview(Modifier.fillMaxSize())
+            NotificationPreview(sample, Modifier.fillMaxSize())
         },
         afterBody = {
             Spacer(Modifier.height(Space.lg))
@@ -584,6 +585,7 @@ private fun OverlayStepsCard(modifier: Modifier = Modifier) {
                                 style = TypeRamp.row,
                             )
                             if (index == 1) {
+                                Spacer(Modifier.height(Space.xs))
                                 Text(
                                     stringResource(R.string.overlay_settings_helper),
                                     color = TextSecondary,
@@ -592,6 +594,7 @@ private fun OverlayStepsCard(modifier: Modifier = Modifier) {
                             }
                         }
                     }
+                    if (index == 1) Spacer(Modifier.height(Space.md))
                     if (index < steps.lastIndex) {
                         androidx.compose.foundation.Canvas(
                             Modifier
@@ -748,7 +751,7 @@ private fun smoothStep(value: Float): Float {
 }
 
 @Composable
-private fun NotificationPreview(modifier: Modifier = Modifier) {
+private fun NotificationPreview(sample: Watched, modifier: Modifier = Modifier) {
     Surface(
         modifier.fillMaxSize(),
         color = Raised,
@@ -756,6 +759,7 @@ private fun NotificationPreview(modifier: Modifier = Modifier) {
         shadowElevation = Elevation.card,
     ) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            SampleChip(Modifier.align(Alignment.TopEnd).padding(CardPadding.content))
             Box(
                 Modifier
                     .size(width = IllustrationSize.phoneWidth, height = IllustrationSize.demoPhoneHeight),
@@ -818,20 +822,14 @@ private fun NotificationPreview(modifier: Modifier = Modifier) {
                         Spacer(Modifier.height(Space.sm))
                     }
                 }
-                Box(
+                Bubble(
+                    sampleBubbleUi(sample),
                     Modifier
                         .align(Alignment.CenterEnd)
                         .offset(x = Space.xl)
-                        .size(IllustrationSize.notificationBubble)
-                        .clip(CircleShape)
-                        .background(TextPrimary)
-                        .border(IllustrationSize.hairline, Raised, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        Modifier.size(IllustrationSize.smallIcon).clip(CircleShape).background(Safe),
-                    )
-                }
+                        .graphicsLayer(scaleX = 0.8f, scaleY = 0.8f),
+                    showSampleTag = false,
+                )
             }
         }
     }

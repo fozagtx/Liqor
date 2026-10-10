@@ -2,11 +2,14 @@ package com.liqor.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -19,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.liqor.R
@@ -45,9 +49,10 @@ fun Panel(
     expandedPosition: String? = null,
     onTogglePosition: (String) -> Unit = {},
     modifier: Modifier = Modifier,
+    maxHeight: Dp? = null,
 ) {
     Surface(
-        modifier = modifier.width(344.dp),
+        modifier = modifier.width(344.dp).then(maxHeight?.let { Modifier.heightIn(max = it) } ?: Modifier),
         color = Raised,
         shape = RoundedCornerShape(24.dp),
         shadowElevation = 14.dp,
@@ -61,6 +66,7 @@ fun Panel(
                     expandedPosition = expandedPosition,
                     onTogglePosition = onTogglePosition,
                     onMore = onMore,
+                    modifier = Modifier.weight(1f, fill = false),
                 )
                 Reading.CouldNotCheck -> UnknownPanelContent()
                 Reading.NoPositions -> Text(
@@ -90,54 +96,61 @@ private fun LivePanelContent(
     expandedPosition: String?,
     onTogglePosition: (String) -> Unit,
     onMore: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val primary = reading.watched.firstOrNull() ?: return
-    TicketCard(
-        watched = primary,
-        title = stringResource(R.string.ticket_closest_to_liquidation),
-        isSample = sample,
-        stale = stale,
-        closest = true,
-        panelContent = true,
-        perforated = false,
-    )
-    reading.watched.drop(1).take(2).forEach { watched ->
-        val expanded = expandedPosition == watched.position.address
-        PanelDivider()
+    Column(modifier.fillMaxWidth()) {
+        val primary = reading.watched.firstOrNull() ?: return@Column
+        TicketCard(
+            watched = primary,
+            title = stringResource(R.string.ticket_closest_to_liquidation),
+            isSample = sample,
+            stale = stale,
+            closest = true,
+            panelContent = true,
+            perforated = false,
+        )
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            Modifier.fillMaxWidth().weight(1f, fill = false).verticalScroll(rememberScrollState()),
         ) {
-            PositionRow(
-                watched = watched,
-                modifier = Modifier
-                    .clickable { onTogglePosition(watched.position.address) }
-                    .padding(horizontal = 10.dp),
-                stale = stale,
-            )
-            if (expanded) {
-                com.liqor.ui.components.TrainLine(
-                    entry = watched.position.entryPrice,
-                    now = watched.position.oraclePrice,
-                    liq = watched.position.liquidationPrice,
-                    travelled = watched.travelled.toFloat(),
-                    level = watched.level,
-                    stale = stale,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+            reading.watched.drop(1).take(2).forEach { watched ->
+                val expanded = expandedPosition == watched.position.address
+                PanelDivider()
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    PositionRow(
+                        watched = watched,
+                        modifier = Modifier
+                            .clickable { onTogglePosition(watched.position.address) }
+                            .padding(horizontal = 10.dp),
+                        stale = stale,
+                    )
+                    if (expanded) {
+                        com.liqor.ui.components.TrainLine(
+                            entry = watched.position.entryPrice,
+                            now = watched.position.oraclePrice,
+                            liq = watched.position.liquidationPrice,
+                            travelled = watched.travelled.toFloat(),
+                            level = watched.level,
+                            stale = stale,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+            val more = (reading.watched.size - 3).coerceAtLeast(0)
+            if (more > 0) {
+                PanelDivider()
+                Text(
+                    text = stringResource(R.string.more_positions, more),
+                    modifier = Modifier
+                        .clickable(onClick = onMore)
+                        .padding(horizontal = 8.dp, vertical = 12.dp),
+                    color = TextSecondary,
+                    style = MaterialTheme.typography.labelSmall,
                 )
             }
         }
-    }
-    val more = (reading.watched.size - 3).coerceAtLeast(0)
-    if (more > 0) {
-        PanelDivider()
-        Text(
-            text = stringResource(R.string.more_positions, more),
-            modifier = Modifier
-                .clickable(onClick = onMore)
-                .padding(horizontal = 8.dp, vertical = 12.dp),
-            color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall,
-        )
     }
 }
 

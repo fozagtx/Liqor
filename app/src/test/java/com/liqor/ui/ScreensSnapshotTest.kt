@@ -80,7 +80,7 @@ class ScreensSnapshotTest {
 
     @Test
     fun notificationPermission() = captureScreen("notification_permission") {
-        NotificationPermissionScreen(onAllow = {}, onNotNow = {})
+        NotificationPermissionScreen(samplePosition.at(0), onAllow = {}, onNotNow = {})
     }
 
     @Test

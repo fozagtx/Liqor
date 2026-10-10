@@ -57,8 +57,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -458,18 +456,6 @@ private fun CaptionPill(
 
 @Composable
 private fun LiquidatedEventCard(modifier: Modifier = Modifier, compact: Boolean = false) {
-    val text = stringResource(R.string.intro_without_event)
-    val separator = text.indexOf('·')
-    val event = buildAnnotatedString {
-        append(text)
-        if (separator >= 0) {
-            addStyle(
-                SpanStyle(color = TextSecondary),
-                separator,
-                text.length,
-            )
-        }
-    }
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = Raised,
@@ -484,13 +470,20 @@ private fun LiquidatedEventCard(modifier: Modifier = Modifier, compact: Boolean 
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.width(IllustrationSize.eventAccent).height(Space.lg + Space.xs).clip(CircleShape).background(Danger))
-            Text(
-                event,
-                Modifier.padding(start = if (compact) Space.xs else Space.sm),
-                color = TextPrimary,
-                style = TypeRamp.micro,
-                maxLines = if (compact) 6 else 2,
-            )
+            Column(Modifier.padding(start = if (compact) Space.xs else Space.sm)) {
+                Text(
+                    stringResource(R.string.intro_without_event),
+                    color = TextPrimary,
+                    style = TypeRamp.micro,
+                    maxLines = 2,
+                )
+                Text(
+                    stringResource(R.string.intro_without_event_time),
+                    color = TextSecondary,
+                    style = TypeRamp.micro,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }
@@ -1097,7 +1090,7 @@ private fun easeOutBack(value: Float): Float {
 private fun lerp(start: Float, end: Float, progress: Float): Float =
     start + (end - start) * progress.coerceIn(0f, 1f)
 
-private fun sampleBubbleUi(sample: Watched): BubbleUi = BubbleUi(
+fun sampleBubbleUi(sample: Watched): BubbleUi = BubbleUi(
     value = distanceText(sample.distance),
     state = BubbleState.Sample,
     cushion = 1f - sample.travelled.toFloat(),

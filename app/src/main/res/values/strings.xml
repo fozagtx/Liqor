@@ -108,7 +108,8 @@
     <string name="intro_with_liqor">WITH LIQOR</string>
     <string name="intro_last_checked_caption">Last checked 2h ago</string>
     <string name="intro_on_screen_caption">On screen in every app</string>
-    <string name="intro_without_event">SOL long liquidated · 2m ago</string>
+    <string name="intro_without_event">SOL long liquidated</string>
+    <string name="intro_without_event_time">2m ago</string>
     <string name="intro_watches_title">Your leverage is spread across Jupiter.</string>
     <string name="intro_watches_body">Perps on SOL, ETH and BTC, plus Beta markets on new tokens and stocks. Checking each one takes time when the price moves fast. Liqor reads them all from your wallet and shows the closest one.</string>
     <string name="intro_venues_label">VENUES</string>

@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
@@ -51,7 +52,7 @@ fun capturePanel(
     expandedPosition: String? = null,
 ) {
     captureScreen(name) {
-        Box(Modifier.fillMaxSize().background(Ground)) {
+        BoxWithConstraints(Modifier.fillMaxSize().background(Ground)) {
             Bubble(
                 bubbleUi(reading, freshness),
                 Modifier.align(Alignment.TopEnd).padding(top = 356.dp, end = 12.dp),
@@ -65,6 +66,7 @@ fun capturePanel(
                 onMore = {},
                 expandedPosition = expandedPosition,
                 modifier = Modifier.align(Alignment.TopEnd).padding(top = 436.dp, end = 12.dp),
+                maxHeight = (maxHeight - 436.dp - 16.dp).coerceAtLeast(0.dp),
             )
         }
     }

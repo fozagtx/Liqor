@@ -587,6 +587,7 @@ class WatchService : LifecycleService() {
             )
             val panelTop = (maxHeight * yFraction + 68.dp)
                 .coerceAtMost((maxHeight - 390.dp).coerceAtLeast(0.dp))
+            val availablePanelHeight = (maxHeight - panelTop - 16.dp).coerceAtLeast(0.dp)
             AnimatedVisibility(
                 visible = visible,
                 modifier = Modifier
@@ -609,6 +610,7 @@ class WatchService : LifecycleService() {
                         onMore = onMore,
                         expandedPosition = expandedAddress,
                         onTogglePosition = onTogglePosition,
+                        maxHeight = availablePanelHeight,
                     )
                 }
             }
