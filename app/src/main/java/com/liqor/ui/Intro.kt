@@ -38,7 +38,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -74,11 +74,13 @@ import com.liqor.domain.distanceText
 import com.liqor.ui.components.BrandMark
 import com.liqor.ui.components.Bubble
 import com.liqor.ui.components.CoinLogo
-import com.liqor.ui.components.PillButton
 import com.liqor.ui.components.SampleChip
+import com.liqor.ui.components.HeroTemplate
 import com.liqor.ui.components.StatusChip
 import com.liqor.ui.components.TextAction
 import com.liqor.ui.theme.Danger
+import com.liqor.ui.theme.DemoLayout
+import com.liqor.ui.theme.Elevation
 import com.liqor.ui.theme.Ground
 import com.liqor.ui.theme.Hairline
 import com.liqor.ui.theme.Motion
@@ -88,6 +90,11 @@ import com.liqor.ui.theme.StaleText
 import com.liqor.ui.theme.StaleTint
 import com.liqor.ui.theme.TextPrimary
 import com.liqor.ui.theme.TextSecondary
+import com.liqor.ui.theme.Space
+import com.liqor.ui.theme.CardPadding
+import com.liqor.ui.theme.Radius
+import com.liqor.ui.theme.IllustrationSize
+import com.liqor.ui.theme.TypeRamp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -101,15 +108,10 @@ fun IntroScreen(
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { 3 })
     val scope = rememberCoroutineScope()
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(Ground)
-            .windowInsetsPadding(WindowInsets.safeDrawing),
-    ) {
+    Box(Modifier.fillMaxSize()) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth().weight(1f),
+            modifier = Modifier.fillMaxSize(),
         ) { page ->
             val pageOffset =
                 ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
@@ -145,137 +147,82 @@ private fun IntroPage(
 ) {
     val reducedMotion = LocalReducedMotion.current
     val illustrationModifier = Modifier
-        .fillMaxWidth()
+        .fillMaxSize()
         .graphicsLayer {
             translationX = if (reducedMotion) 0f else pageOffset * size.width * 0.3f
         }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-    ) {
-        Column(
-            Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Row(
-                Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                BrandMark()
-                Text(
-                    stringResource(R.string.app_name),
-                    Modifier.padding(start = 7.dp),
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                )
-                Spacer(Modifier.weight(1f))
-                if (page < 2) {
-                    TextAction(stringResource(R.string.intro_skip), onSkip)
-                } else {
-                    Spacer(Modifier.width(63.dp))
-                }
-            }
-
+    HeroTemplate(
+        title = stringResource(
+            when (page) {
+                0 -> R.string.intro_before_title
+                1 -> R.string.intro_watches_title
+                else -> R.string.intro_demo_title
+            },
+        ),
+        body = stringResource(
+            when (page) {
+                0 -> R.string.intro_before_body
+                1 -> R.string.intro_watches_body
+                else -> R.string.intro_demo_body
+            },
+        ),
+        pagerPage = page,
+        primaryText = stringResource(if (page == 2) R.string.intro_get_started else R.string.intro_continue),
+        onPrimary = onContinue,
+        secondaryContent = if (page < 2) {
+            { TextAction(stringResource(R.string.intro_skip), onSkip) }
+        } else {
+            null
+        },
+        illustration = {
             when (page) {
                 0 -> BeforeAfterIllustration(sample, settled, illustrationModifier)
                 1 -> CoverageIllustration(settled, illustrationModifier)
                 else -> BubbleDemo(sample, demoTimeMs, illustrationModifier)
             }
-
-            Text(
-                stringResource(
-                    when (page) {
-                        0 -> R.string.intro_before_title
-                        1 -> R.string.intro_watches_title
-                        else -> R.string.intro_demo_title
-                    },
-                ),
-                color = TextPrimary,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = (-0.04).em,
-                ),
-            )
-            Text(
-                stringResource(
-                    when (page) {
-                        0 -> R.string.intro_before_body
-                        1 -> R.string.intro_watches_body
-                        else -> R.string.intro_demo_body
-                    },
-                ),
-                color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-
+        },
+        afterBody = {
             if (page == 1) {
-                Row(
-                    Modifier
-                        .align(Alignment.Start)
-                        .clip(CircleShape)
-                        .background(Raised)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        Modifier.size(24.dp).clip(CircleShape).background(Safe),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            stringResource(R.string.check_glyph),
-                            color = Raised,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
-                        )
-                    }
-                    Text(
-                        stringResource(R.string.feature_read_only),
-                        Modifier.padding(start = 8.dp),
-                        color = TextPrimary,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    )
-                }
+                Spacer(Modifier.height(Space.lg))
+                ReadOnlyTrust()
+                Spacer(Modifier.height(Space.sm))
                 Text(
                     stringResource(R.string.intro_wallet_adapter),
                     color = TextSecondary,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                    style = TypeRamp.caption,
                 )
             }
-        }
-
-        Spacer(Modifier.height(14.dp))
-        PagerDots(page)
-        Spacer(Modifier.height(14.dp))
-        PillButton(
-            stringResource(if (page == 2) R.string.intro_get_started else R.string.intro_continue),
-            onContinue,
-        )
-    }
+        },
+    )
 }
 
 @Composable
-private fun PagerDots(page: Int) {
+private fun ReadOnlyTrust() {
     Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
+        Modifier
+            .clip(CircleShape)
+            .background(Raised)
+            .height(IllustrationSize.readOnlyChipHeight)
+            .padding(horizontal = Space.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        repeat(3) { index ->
-            val width by animateDpAsState(
-                targetValue = if (index == page) 18.dp else 6.dp,
-                animationSpec = tween(Motion.Fast, easing = Motion.SmoothOut),
-                label = "intro-dot-width",
-            )
-            Box(
-                Modifier
-                    .padding(horizontal = 4.dp)
-                    .width(width)
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(if (index == page) TextPrimary else Hairline),
+        Box(
+            Modifier.size(IllustrationSize.brandMark).clip(CircleShape).background(Safe),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                stringResource(R.string.check_glyph),
+                color = Raised,
+                style = TypeRamp.caption,
             )
         }
+        Text(
+            stringResource(R.string.feature_read_only),
+            Modifier.padding(start = Space.sm),
+            color = TextPrimary,
+            style = TypeRamp.label,
+        )
     }
 }
 
@@ -311,13 +258,36 @@ private fun BeforeAfterIllustration(
     Surface(
         modifier = modifier,
         color = Raised,
-        shape = RoundedCornerShape(20.dp),
-        shadowElevation = 5.dp,
+        shape = RoundedCornerShape(Radius.lg),
+        shadowElevation = Elevation.card,
     ) {
-        Box(Modifier.fillMaxWidth()) {
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val phoneWidthLimit = (maxWidth - CardPadding.content * 2 - Space.sm) / 2
+            val density = LocalDensity.current
+            val labelHeight = with(density) { TypeRamp.label.lineHeight.toDp() }
+            val standardPhoneWidth = minOf(
+                phoneWidthLimit,
+                (maxHeight - Space.xxxl - CardPadding.content - labelHeight - Space.xs) * (9f / 17f),
+            )
+            val compact = standardPhoneWidth < IllustrationSize.miniPhoneCompactWidth
+            val compactLabelHeight = with(density) { TypeRamp.micro.lineHeight.toDp() * 2 }
+            val phoneAspectRatio = if (compact) 2f / 3f else 9f / 17f
+            val phoneWidth = if (compact) {
+                minOf(
+                    phoneWidthLimit,
+                    (maxHeight - Space.xxxl - CardPadding.content - compactLabelHeight - Space.xs) * phoneAspectRatio,
+                )
+            } else {
+                standardPhoneWidth
+            }
             Row(
-                Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, top = 50.dp, bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(9.dp),
+                Modifier.fillMaxWidth().padding(
+                    start = CardPadding.content,
+                    end = CardPadding.content,
+                    top = Space.xxxl,
+                    bottom = CardPadding.content,
+                ),
+                horizontalArrangement = Arrangement.Center,
             ) {
                 MiniPhone(
                     label = stringResource(R.string.intro_without_liqor),
@@ -325,16 +295,21 @@ private fun BeforeAfterIllustration(
                     isWithLiqor = false,
                     bubbleScale = 1f,
                     bubbleAlpha = 1f,
-                    modifier = Modifier.weight(1f),
+                    compact = compact,
+                    phoneAspectRatio = phoneAspectRatio,
+                    modifier = Modifier.width(phoneWidth),
                 )
+                Spacer(Modifier.width(Space.sm))
                 MiniPhone(
                     label = stringResource(R.string.intro_with_liqor),
                     sample = sample,
                     isWithLiqor = true,
                     bubbleScale = 0.9f + 0.1f * bubbleReveal.value,
                     bubbleAlpha = bubbleReveal.value,
+                    compact = compact,
+                    phoneAspectRatio = phoneAspectRatio,
                     modifier = Modifier
-                        .weight(1f)
+                        .width(phoneWidth)
                         .drawWithContent {
                             clipRect(right = size.width * wipe.value) {
                                 this@drawWithContent.drawContent()
@@ -342,7 +317,7 @@ private fun BeforeAfterIllustration(
                         },
                 )
             }
-            SampleChip(Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 10.dp))
+            SampleChip(Modifier.align(Alignment.TopEnd).padding(top = Space.sm, end = Space.md))
         }
     }
 }
@@ -354,42 +329,49 @@ private fun MiniPhone(
     isWithLiqor: Boolean,
     bubbleScale: Float,
     bubbleAlpha: Float,
+    compact: Boolean,
+    phoneAspectRatio: Float,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             label,
             color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-            maxLines = 1,
+            style = if (compact) TypeRamp.micro else TypeRamp.label,
+            maxLines = if (compact) 2 else 1,
         )
         Box(
             Modifier
                 .fillMaxWidth()
-                .padding(top = 5.dp)
-                .aspectRatio(9f / 17f)
-                .clip(RoundedCornerShape(16.dp))
+                .padding(top = Space.xs)
+                .aspectRatio(phoneAspectRatio)
+                .clip(RoundedCornerShape(Radius.sm))
                 .background(Ground)
-                .border(1.dp, Hairline, RoundedCornerShape(16.dp)),
+                .border(IllustrationSize.hairline, Hairline, RoundedCornerShape(Radius.sm)),
         ) {
             Column(
-                Modifier.fillMaxSize().padding(9.dp),
+                Modifier.fillMaxSize().padding(
+                    if (compact) Space.xs else CardPadding.inner,
+                ),
             ) {
                 MiniAppSkeleton(
                     Modifier.weight(1f).graphicsLayer(alpha = if (isWithLiqor) 1f else 0.6f),
                 )
                 if (isWithLiqor) {
-                    CaptionPill(
-                        stringResource(R.string.intro_on_screen_caption),
-                        Modifier.padding(top = 7.dp),
-                    )
+                        CaptionPill(
+                            stringResource(R.string.intro_on_screen_caption),
+                            Modifier.padding(top = Space.sm),
+                            maxLines = if (compact) 3 else 1,
+                        )
                 } else {
-                    CaptionPill(
-                        stringResource(R.string.intro_last_checked_caption),
-                        Modifier.padding(top = 7.dp),
-                        stale = true,
-                    )
-                    LiquidatedEventCard(Modifier.padding(top = 6.dp))
+                    if (!compact) {
+                        CaptionPill(
+                            stringResource(R.string.intro_last_checked_caption),
+                            Modifier.padding(top = Space.sm),
+                            stale = true,
+                        )
+                    }
+                    LiquidatedEventCard(Modifier.padding(top = Space.xs), compact)
                 }
             }
             if (isWithLiqor) {
@@ -398,12 +380,16 @@ private fun MiniPhone(
                         sampleBubbleUi(sample),
                         Modifier
                             .align(Alignment.TopEnd)
-                            .padding(top = maxHeight * 0.36f, end = 1.dp)
+                            .padding(
+                                top = maxHeight * if (compact) 0f else 0.36f,
+                                end = IllustrationSize.hairline,
+                            )
                             .graphicsLayer {
                                 scaleX = bubbleScale * 0.8f
                                 scaleY = bubbleScale * 0.8f
                                 alpha = bubbleAlpha
                             },
+                        showSampleTag = !compact,
                     )
                 }
             }
@@ -415,31 +401,31 @@ private fun MiniPhone(
 private fun MiniAppSkeleton(modifier: Modifier = Modifier) {
     Column(
         modifier,
-        verticalArrangement = Arrangement.spacedBy(9.dp),
+        verticalArrangement = Arrangement.spacedBy(Space.sm),
     ) {
         Row(
-            Modifier.fillMaxWidth().padding(bottom = 4.dp),
+            Modifier.fillMaxWidth().padding(bottom = Space.xs),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.size(17.dp).clip(CircleShape).background(Hairline))
-            Column(Modifier.weight(1f).padding(start = 7.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                SkeletonBar(Modifier.fillMaxWidth(0.72f).height(6.dp))
-                SkeletonBar(Modifier.fillMaxWidth(0.45f).height(4.dp))
+            Box(Modifier.size(IllustrationSize.headerAvatar).clip(CircleShape).background(Hairline))
+            Column(Modifier.weight(1f).padding(start = Space.sm), verticalArrangement = Arrangement.spacedBy(Space.xs)) {
+                SkeletonBar(Modifier.fillMaxWidth(0.72f).height(IllustrationSize.skeletonMain))
+                SkeletonBar(Modifier.fillMaxWidth(0.45f).height(IllustrationSize.skeletonSmall))
             }
-            Box(Modifier.size(5.dp).clip(CircleShape).background(Hairline))
+            Box(Modifier.size(Space.xs).clip(CircleShape).background(Hairline))
         }
         repeat(5) { index ->
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(Modifier.size(16.dp).clip(CircleShape).background(Hairline))
+                Box(Modifier.size(IllustrationSize.skeletonAvatar).clip(CircleShape).background(Hairline))
                 Column(
-                    Modifier.weight(1f).padding(start = 7.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    Modifier.weight(1f).padding(start = Space.sm),
+                    verticalArrangement = Arrangement.spacedBy(Space.xs),
                 ) {
-                    SkeletonBar(Modifier.fillMaxWidth(if (index % 2 == 0) 0.9f else 0.72f).height(5.dp))
-                    SkeletonBar(Modifier.fillMaxWidth(if (index % 2 == 0) 0.58f else 0.43f).height(4.dp))
+                    SkeletonBar(Modifier.fillMaxWidth(if (index % 2 == 0) 0.9f else 0.72f).height(IllustrationSize.skeletonMedium))
+                    SkeletonBar(Modifier.fillMaxWidth(if (index % 2 == 0) 0.58f else 0.43f).height(IllustrationSize.skeletonSmall))
                 }
             }
         }
@@ -456,21 +442,22 @@ private fun CaptionPill(
     text: String,
     modifier: Modifier = Modifier,
     stale: Boolean = false,
+    maxLines: Int = 1,
 ) {
     Text(
         text,
         modifier
             .clip(CircleShape)
             .background(if (stale) StaleTint else Raised)
-            .padding(horizontal = 7.dp, vertical = 4.dp),
+            .padding(horizontal = Space.sm, vertical = Space.xs),
         color = if (stale) StaleText else TextSecondary,
-        style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp),
-        maxLines = 1,
+        style = TypeRamp.micro,
+        maxLines = maxLines,
     )
 }
 
 @Composable
-private fun LiquidatedEventCard(modifier: Modifier = Modifier) {
+private fun LiquidatedEventCard(modifier: Modifier = Modifier, compact: Boolean = false) {
     val text = stringResource(R.string.intro_without_event)
     val separator = text.indexOf('·')
     val event = buildAnnotatedString {
@@ -486,20 +473,23 @@ private fun LiquidatedEventCard(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = Raised,
-        shape = RoundedCornerShape(8.dp),
-        shadowElevation = 2.dp,
+        shape = RoundedCornerShape(IllustrationSize.eventRadius),
+        shadowElevation = Elevation.card,
     ) {
         Row(
-            Modifier.padding(horizontal = 7.dp, vertical = 6.dp),
+            Modifier.padding(
+                horizontal = if (compact) Space.xs else Space.sm,
+                vertical = Space.sm,
+            ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(Modifier.width(3.dp).height(19.dp).clip(CircleShape).background(Danger))
+            Box(Modifier.width(IllustrationSize.eventAccent).height(Space.lg + Space.xs).clip(CircleShape).background(Danger))
             Text(
                 event,
-                Modifier.padding(start = 6.dp),
+                Modifier.padding(start = if (compact) Space.xs else Space.sm),
                 color = TextPrimary,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp, lineHeight = 9.sp),
-                maxLines = 2,
+                style = TypeRamp.micro,
+                maxLines = if (compact) 6 else 2,
             )
         }
     }
@@ -513,20 +503,19 @@ private fun CoverageIllustration(
     Surface(
         modifier = modifier,
         color = Raised,
-        shape = RoundedCornerShape(20.dp),
-        shadowElevation = 5.dp,
+        shape = RoundedCornerShape(Radius.lg),
+        shadowElevation = Elevation.card,
     ) {
-        Box {
-            Column(
-                Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(13.dp),
-            ) {
+        Column(
+            Modifier.fillMaxSize().padding(CardPadding.content),
+            verticalArrangement = Arrangement.spacedBy(Space.md),
+        ) {
                 Text(
                     stringResource(R.string.intro_venues_label),
                     color = TextSecondary,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                    style = TypeRamp.label,
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                     VenueTile("SOL", R.string.intro_venue_solana, Modifier.weight(1f))
                     VenueTile("JUP", R.string.intro_venue_perps, Modifier.weight(1f))
                     VenueTile("JUP", R.string.intro_venue_beta, Modifier.weight(1f))
@@ -534,7 +523,7 @@ private fun CoverageIllustration(
                 Text(
                     stringResource(R.string.intro_crypto_label),
                     color = TextSecondary,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                    style = TypeRamp.label,
                 )
                 Row(
                     Modifier.fillMaxWidth(),
@@ -543,15 +532,15 @@ private fun CoverageIllustration(
                     FanCoinStack(listOf("SOL", "ETH", "BTC", "JUP", "HYPE", "ZEC"), settled)
                     Text(
                         stringResource(R.string.intro_crypto_assets),
-                        Modifier.weight(1f).padding(start = 8.dp),
+                        Modifier.weight(1f).padding(start = Space.sm),
                         color = TextPrimary,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                        style = TypeRamp.caption,
                     )
                 }
                 Text(
                     stringResource(R.string.intro_stocks_label),
                     color = TextSecondary,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                    style = TypeRamp.label,
                 )
                 Row(
                     Modifier.fillMaxWidth(),
@@ -560,12 +549,11 @@ private fun CoverageIllustration(
                     FanCoinStack(listOf("SPCX", "SNDK", "SKHYNIX"), settled)
                     Text(
                         stringResource(R.string.intro_stock_names),
-                        Modifier.weight(1f).padding(start = 8.dp),
+                        Modifier.weight(1f).padding(start = Space.sm),
                         color = TextPrimary,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                        style = TypeRamp.caption,
                     )
                 }
-            }
         }
     }
 }
@@ -574,17 +562,18 @@ private fun CoverageIllustration(
 private fun VenueTile(asset: String, nameResource: Int, modifier: Modifier = Modifier) {
     Column(
         modifier
-            .clip(RoundedCornerShape(12.dp))
+            .height(IllustrationSize.venueHeight)
+            .clip(RoundedCornerShape(Radius.sm))
             .background(Ground)
-            .padding(horizontal = 4.dp, vertical = 9.dp),
+            .padding(horizontal = Space.xs, vertical = Space.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(5.dp),
+        verticalArrangement = Arrangement.spacedBy(Space.xs),
     ) {
-        CoinLogo(asset, 22.dp)
+        CoinLogo(asset, IllustrationSize.venueLogo)
         Text(
             stringResource(nameResource),
             color = TextPrimary,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+            style = TypeRamp.caption,
             textAlign = TextAlign.Center,
             maxLines = 2,
         )
@@ -597,9 +586,9 @@ private fun FanCoinStack(assets: List<String>, settled: Boolean) {
     val animatedScope = LocalAnimatedScope.current
     val shouldAnimate = !reducedMotion && animatedScope != null && settled
     val stockStack = assets.all { it in stockAssets }
-    val iconSize = 28.dp
-    val diameter = if (stockStack) 34.dp else 32.dp
-    val step = if (stockStack) 27.dp else 20.dp
+    val iconSize = IllustrationSize.logo
+    val diameter = if (stockStack) IllustrationSize.stockLogo else IllustrationSize.logo
+    val step = diameter - Space.sm
     Box(
         Modifier.width(diameter + step * (assets.size - 1)).height(diameter),
     ) {
@@ -624,7 +613,7 @@ private fun FanCoinStack(assets: List<String>, settled: Boolean) {
                         .offset(x = step * index * progress.value)
                         .zIndex(index.toFloat())
                         .graphicsLayer(alpha = progress.value),
-                    imageInset = 5.dp,
+                    imageInset = IllustrationSize.stockLogoInset,
                     containerColor = Raised,
                     borderColor = Hairline,
                 )
@@ -637,7 +626,7 @@ private fun FanCoinStack(assets: List<String>, settled: Boolean) {
                         .graphicsLayer(alpha = progress.value)
                         .clip(CircleShape)
                         .background(Raised)
-                        .border(2.dp, Raised, CircleShape),
+                        .border(Space.xs / 2, Raised, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     CoinLogo(asset, iconSize)
@@ -690,37 +679,42 @@ fun BubbleDemo(sample: Watched, timeMs: Long?, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         color = Raised,
-        shape = RoundedCornerShape(20.dp),
-        shadowElevation = 5.dp,
+        shape = RoundedCornerShape(Radius.lg),
+        shadowElevation = Elevation.card,
     ) {
-        Column(
-            Modifier.fillMaxWidth().padding(14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(Modifier.fillMaxWidth()) {
-                SampleChip(Modifier.align(Alignment.TopEnd))
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val phoneHeight = (maxHeight - Space.xxxl).coerceAtLeast(IllustrationSize.miniPhoneHeight)
+            SampleChip(Modifier.align(Alignment.TopEnd).padding(CardPadding.inner))
+            AnimatedContent(
+                targetState = captionIndex,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(
+                        start = CardPadding.content,
+                        end = CardPadding.content,
+                        bottom = CardPadding.content,
+                    ),
+                transitionSpec = {
+                    fadeIn(tween(Motion.Fast)) togetherWith fadeOut(tween(Motion.Fast))
+                },
+                label = "bubble-demo-caption",
+            ) { index ->
+                Text(
+                    stringResource(captions[index]),
+                    color = TextSecondary,
+                    style = TypeRamp.caption,
+                    textAlign = TextAlign.Center,
+                )
+            }
+            Box(Modifier.align(Alignment.TopCenter).padding(top = DemoLayout.phoneTop)) {
                 AnimatedDemoPhone(
                     sample,
                     time,
-                    Modifier.align(Alignment.TopCenter).padding(top = 24.dp),
+                    Modifier.height(phoneHeight),
                 )
             }
         }
-    }
-    AnimatedContent(
-        targetState = captionIndex,
-        transitionSpec = {
-            fadeIn(tween(Motion.Fast)) togetherWith fadeOut(tween(Motion.Fast))
-        },
-        label = "bubble-demo-caption",
-    ) { index ->
-        Text(
-            stringResource(captions[index]),
-            Modifier.fillMaxWidth().padding(top = 10.dp),
-            color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-            textAlign = TextAlign.Center,
-        )
     }
 }
 
@@ -728,11 +722,10 @@ fun BubbleDemo(sample: Watched, timeMs: Long?, modifier: Modifier = Modifier) {
 private fun AnimatedDemoPhone(sample: Watched, time: Float, modifier: Modifier = Modifier) {
     BoxWithConstraints(
         modifier
-            .width(220.dp)
-            .height(300.dp)
-            .clip(RoundedCornerShape(18.dp))
+            .width(IllustrationSize.phoneWidth)
+            .clip(RoundedCornerShape(Radius.sm))
             .background(Ground)
-            .border(1.dp, Hairline, RoundedCornerShape(18.dp)),
+            .border(IllustrationSize.hairline, Hairline, RoundedCornerShape(Radius.sm)),
     ) {
         val width = maxWidth.value
         val height = maxHeight.value
@@ -740,27 +733,43 @@ private fun AnimatedDemoPhone(sample: Watched, time: Float, modifier: Modifier =
         val resetProgress = if (time >= 6_400f) smooth(((time - 6_400f) / 600f).coerceIn(0f, 1f)) else 0f
         val resetAlpha = if (time >= 6_400f) 1f - ((time - 6_400f) / 600f).coerceIn(0f, 1f) else 1f
 
-        var bubbleX = lerp(width + 8f, width - 63f, enterProgress)
-        var bubbleY = 104f
+        var bubbleX = lerp(width + Space.sm.value, width - DemoLayout.bubbleRightInset.value, enterProgress)
+        var bubbleY = DemoLayout.bubbleTop.value
         var bubbleScale = 1f
         var bubbleAlpha = enterProgress * resetAlpha
         if (time in 2_800f..4_600f) {
             val p = easeOutBack(((time - 2_800f) / 1_800f).coerceIn(0f, 1f))
-            bubbleX = lerp(width - 63f, 4f, p).coerceIn(0f, width - 56f)
+            bubbleX = lerp(
+                width - DemoLayout.bubbleRightInset.value,
+                Space.xs.value,
+                p,
+            ).coerceIn(0f, width - IllustrationSize.demoBubble.value)
         } else if (time in 4_600f..6_400f) {
             val p = smooth(((time - 4_600f) / 1_800f).coerceIn(0f, 1f))
-            bubbleX = lerp(4f, (width - 56f) / 2f, p)
-            bubbleY = lerp(104f, height - 78f, p)
+            bubbleX = lerp(
+                Space.xs.value,
+                (width - IllustrationSize.demoBubble.value) / 2f,
+                p,
+            )
+            bubbleY = lerp(DemoLayout.bubbleTop.value, height - DemoLayout.bubbleHideBottom.value, p)
             val shrink = smooth(((time - 5_700f) / 500f).coerceIn(0f, 1f))
             bubbleScale = lerp(1f, 0.28f, shrink)
             bubbleAlpha = (1f - shrink) * resetAlpha
         } else if (time >= 6_400f) {
-            bubbleX = lerp((width - 56f) / 2f, width + 8f, resetProgress)
-            bubbleY = lerp(height - 78f, 104f, resetProgress)
+            bubbleX = lerp(
+                (width - IllustrationSize.demoBubble.value) / 2f,
+                width + Space.sm.value,
+                resetProgress,
+            )
+                bubbleY = lerp(
+                    height - DemoLayout.bubbleHideBottom.value,
+                    DemoLayout.bubbleTop.value,
+                    resetProgress,
+                )
         }
 
         MiniAppSkeleton(
-            Modifier.fillMaxSize().padding(12.dp).graphicsLayer(alpha = 0.65f),
+            Modifier.fillMaxSize().padding(CardPadding.inner).graphicsLayer(alpha = 0.65f),
         )
 
         val panelProgress = panelProgress(time)
@@ -768,7 +777,14 @@ private fun AnimatedDemoPhone(sample: Watched, time: Float, modifier: Modifier =
             DemoPanel(
                 sample,
                 Modifier
-                    .offset(x = (width - 175f).dp, y = 190.dp)
+                    .offset(
+                        x = (
+                            bubbleX +
+                                IllustrationSize.demoBubble.value -
+                                IllustrationSize.demoPanelWidth.value
+                            ).dp,
+                        y = (bubbleY + IllustrationSize.demoBubble.value + DemoLayout.bubblePanelGap.value).dp,
+                    )
                     .graphicsLayer {
                         alpha = panelProgress
                         scaleX = 0.6f + 0.4f * panelProgress
@@ -789,7 +805,7 @@ private fun AnimatedDemoPhone(sample: Watched, time: Float, modifier: Modifier =
             HideTarget(
                 Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 25.dp)
+                    .padding(bottom = DemoLayout.hideTargetBottom)
                     .graphicsLayer(alpha = hideAlpha),
             )
         }
@@ -823,23 +839,23 @@ private fun AnimatedDemoPhone(sample: Watched, time: Float, modifier: Modifier =
 @Composable
 private fun DemoPanel(sample: Watched, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier.width(170.dp),
+        modifier = modifier.width(IllustrationSize.demoPanelWidth),
         color = Raised,
-        shape = RoundedCornerShape(14.dp),
-        shadowElevation = 5.dp,
+        shape = RoundedCornerShape(Radius.md),
+        shadowElevation = Elevation.card,
     ) {
-        Column(Modifier.padding(10.dp)) {
+        Column(Modifier.padding(CardPadding.inner)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                CoinLogo(sample.position.asset, 20.dp)
+                CoinLogo(sample.position.asset, DemoLayout.panelRowIcon)
                 Text(
                     stringResource(
                         R.string.intro_demo_position_name,
                         sample.position.asset,
                         sample.position.side,
                     ),
-                    Modifier.weight(1f).padding(start = 6.dp),
+                    Modifier.weight(1f).padding(start = Space.xs),
                     color = TextPrimary,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                    style = TypeRamp.row,
                     maxLines = 1,
                 )
                 StatusChip(
@@ -847,16 +863,16 @@ private fun DemoPanel(sample: Watched, modifier: Modifier = Modifier) {
                     label = "${distanceText(sample.distance)}%",
                 )
             }
-            Canvas(Modifier.fillMaxWidth().height(18.dp).padding(top = 5.dp)) {
+            Canvas(Modifier.fillMaxWidth().height(IllustrationSize.demoTrack).padding(top = Space.xs)) {
                 val start = size.width * 0.1f
                 val end = size.width * 0.9f
                 val y = size.height * 0.6f
                 val now = start + (end - start) * sample.travelled.toFloat().coerceIn(0f, 1f)
-                drawLine(Hairline, Offset(start, y), Offset(end, y), 3.dp.toPx())
-                drawLine(levelColor(sample.level), Offset(start, y), Offset(now, y), 3.dp.toPx())
-                drawCircle(TextSecondary, 2.dp.toPx(), Offset(start, y))
-                drawCircle(levelColor(sample.level), 2.5.dp.toPx(), Offset(now, y))
-                drawCircle(Danger, 2.dp.toPx(), Offset(end, y))
+                drawLine(Hairline, Offset(start, y), Offset(end, y), IllustrationSize.demoTrackStroke.toPx())
+                drawLine(levelColor(sample.level), Offset(start, y), Offset(now, y), IllustrationSize.demoTrackStroke.toPx())
+                drawCircle(TextSecondary, Space.xs.toPx() / 2, Offset(start, y))
+                drawCircle(levelColor(sample.level), Space.xs.toPx() * 0.625f, Offset(now, y))
+                drawCircle(Danger, Space.xs.toPx() / 2, Offset(end, y))
             }
         }
     }
@@ -867,17 +883,17 @@ private fun ReducedMotionDemo(sample: Watched, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         color = Raised,
-        shape = RoundedCornerShape(20.dp),
-        shadowElevation = 5.dp,
+        shape = RoundedCornerShape(Radius.lg),
+        shadowElevation = Elevation.card,
     ) {
-        Column(
-            Modifier.fillMaxWidth().padding(10.dp),
-            horizontalAlignment = Alignment.End,
-        ) {
-            SampleChip()
+        Box(Modifier.fillMaxSize()) {
+            SampleChip(Modifier.align(Alignment.TopEnd).padding(CardPadding.inner))
             Row(
-                Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = Space.sm),
+                horizontalArrangement = Arrangement.spacedBy(Space.sm),
             ) {
                 StaticDemoFrame(sample, 0, Modifier.weight(1f))
                 StaticDemoFrame(sample, 1, Modifier.weight(1f))
@@ -900,36 +916,38 @@ private fun StaticDemoFrame(sample: Watched, type: Int, modifier: Modifier = Mod
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(136.dp)
-                .clip(RoundedCornerShape(11.dp))
+                .height(IllustrationSize.miniFrameHeight)
+                .clip(RoundedCornerShape(Radius.sm))
                 .background(Ground)
-                .border(1.dp, Hairline, RoundedCornerShape(11.dp)),
+                .border(IllustrationSize.hairline, Hairline, RoundedCornerShape(Radius.sm)),
         ) {
-            MiniAppSkeleton(Modifier.fillMaxSize().padding(6.dp).graphicsLayer(alpha = 0.65f))
+            MiniAppSkeleton(Modifier.fillMaxSize().padding(Space.xs).graphicsLayer(alpha = 0.65f))
             if (type == 0) {
                 Surface(
-                    Modifier.align(Alignment.TopCenter).padding(top = 34.dp).width(84.dp),
+                    Modifier.align(Alignment.TopCenter).padding(top = DemoLayout.miniPanelTop)
+                        .width(IllustrationSize.demoMiniPanelWidth),
                     color = Raised,
-                    shape = RoundedCornerShape(7.dp),
-                    shadowElevation = 3.dp,
+                    shape = RoundedCornerShape(DemoLayout.miniPanelRadius),
+                    shadowElevation = Elevation.card,
                 ) {
-                    Column(Modifier.padding(5.dp)) {
+                    Column(Modifier.padding(DemoLayout.miniPanelInner)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            CoinLogo(sample.position.asset, 13.dp)
+                            CoinLogo(sample.position.asset, IllustrationSize.venueLogo)
                             Text(
                                 stringResource(
                                     R.string.intro_demo_position_name,
                                     sample.position.asset,
                                     sample.position.side,
                                 ),
-                                Modifier.padding(start = 4.dp),
+                                Modifier.padding(start = Space.xs),
                                 color = TextPrimary,
-                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 6.sp),
+                                style = TypeRamp.micro,
+                                maxLines = 1,
                             )
                         }
-                        Canvas(Modifier.fillMaxWidth().height(9.dp).padding(top = 4.dp)) {
-                            drawLine(Hairline, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 2.dp.toPx())
-                            drawCircle(levelColor(sample.level), 1.7.dp.toPx(), Offset(size.width * 0.55f, size.height / 2))
+                        Canvas(Modifier.fillMaxWidth().height(DemoLayout.miniPanelTrack).padding(top = Space.xs)) {
+                            drawLine(Hairline, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), Space.xs.toPx() / 2)
+                            drawCircle(levelColor(sample.level), Space.xs.toPx() * 0.425f, Offset(size.width * 0.55f, size.height / 2))
                         }
                     }
                 }
@@ -937,44 +955,50 @@ private fun StaticDemoFrame(sample: Watched, type: Int, modifier: Modifier = Mod
                     sampleBubbleUi(sample),
                     Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(end = 1.dp, bottom = 2.dp)
+                        .padding(end = IllustrationSize.hairline, bottom = Space.xs / 2)
                         .graphicsLayer(scaleX = 0.48f, scaleY = 0.48f, transformOrigin = TransformOrigin(1f, 1f)),
+                    showSampleTag = false,
                 )
             } else if (type == 1) {
                 Bubble(
                     sampleBubbleUi(sample),
                     Modifier
                         .align(Alignment.CenterStart)
-                        .padding(start = 1.dp)
+                        .padding(start = IllustrationSize.hairline)
                         .graphicsLayer(scaleX = 0.52f, scaleY = 0.52f, transformOrigin = TransformOrigin(0f, 0.5f)),
+                    showSampleTag = false,
                 )
             } else {
                 HideTarget(
-                    Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp),
-                    size = 30.dp,
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = Space.xs),
+                    size = IllustrationSize.hideTarget,
                 )
                 Bubble(
                     sampleBubbleUi(sample),
                     Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 3.dp)
+                        .padding(bottom = Space.xs)
                         .graphicsLayer(scaleX = 0.42f, scaleY = 0.42f, transformOrigin = TransformOrigin(0.5f, 1f)),
+                    showSampleTag = false,
                 )
             }
         }
         Text(
             caption,
-            Modifier.fillMaxWidth().padding(top = 5.dp),
+            Modifier.fillMaxWidth().padding(top = DemoLayout.miniCaptionTop),
             color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 7.sp, lineHeight = 9.sp),
+            style = TypeRamp.caption,
             textAlign = TextAlign.Center,
-            maxLines = 3,
+            maxLines = 2,
         )
     }
 }
 
 @Composable
-private fun HideTarget(modifier: Modifier = Modifier, size: androidx.compose.ui.unit.Dp = 40.dp) {
+private fun HideTarget(
+    modifier: Modifier = Modifier,
+    size: androidx.compose.ui.unit.Dp = IllustrationSize.hideTarget,
+) {
     Box(
         modifier
             .size(size)
@@ -985,7 +1009,7 @@ private fun HideTarget(modifier: Modifier = Modifier, size: androidx.compose.ui.
         Text(
             stringResource(R.string.hide_glyph),
             color = Raised,
-            style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp),
+            style = TypeRamp.bodyStrong.copy(fontSize = 20.sp, lineHeight = 24.sp),
         )
     }
 }
@@ -994,10 +1018,10 @@ private fun HideTarget(modifier: Modifier = Modifier, size: androidx.compose.ui.
 private fun Finger(modifier: Modifier = Modifier) {
     Box(
         modifier
-            .size(24.dp)
+            .size(IllustrationSize.demoFinger)
             .clip(CircleShape)
             .background(TextPrimary.copy(alpha = 0.25f))
-            .border(1.5.dp, TextPrimary.copy(alpha = 0.5f), CircleShape),
+            .border(Space.xs * 0.375f, TextPrimary.copy(alpha = 0.5f), CircleShape),
     )
 }
 
@@ -1016,20 +1040,37 @@ private fun fingerPosition(
     bubbleY: Float,
 ): FingerPosition {
     return when {
-        time < 1_200f -> FingerPosition(width * 0.48f, height * 0.7f, alpha = 0f)
+        time < 1_200f -> FingerPosition(DemoLayout.fingerTravelStartX.value, height * 0.7f, alpha = 0f)
         time < 1_550f -> {
             val p = smooth((time - 1_200f) / 350f)
-            FingerPosition(lerp(width * 0.48f, width - 47f, p), lerp(height * 0.7f, 134f, p))
+            FingerPosition(
+                lerp(
+                    DemoLayout.fingerTravelStartX.value,
+                    width - DemoLayout.fingerStartXInset.value,
+                    p,
+                ),
+                lerp(height * 0.7f, DemoLayout.fingerStartY.value, p),
+            )
         }
         time < 2_800f -> {
             val press = smooth(((time - 1_650f) / 150f).coerceIn(0f, 1f))
-            FingerPosition(width - 47f, 134f, 1f - press * 0.15f)
+            FingerPosition(
+                width - DemoLayout.fingerStartXInset.value,
+                DemoLayout.fingerStartY.value,
+                1f - press * 0.15f,
+            )
         }
-        time < 4_600f -> FingerPosition(bubbleX + 16f, bubbleY + 22f)
-        time < 6_400f -> FingerPosition(bubbleX + 16f, bubbleY + 38f)
+        time < 4_600f -> FingerPosition(
+            bubbleX + DemoLayout.fingerCenterOffset.value,
+            bubbleY + DemoLayout.fingerTapOffset.value,
+        )
+        time < 6_400f -> FingerPosition(
+            bubbleX + DemoLayout.fingerCenterOffset.value,
+            bubbleY + DemoLayout.fingerHideOffset.value,
+        )
         else -> FingerPosition(
-            bubbleX + 16f,
-            bubbleY + 38f,
+            bubbleX + DemoLayout.fingerCenterOffset.value,
+            bubbleY + DemoLayout.fingerHideOffset.value,
             alpha = 1f - smooth((time - 6_400f) / 600f),
         )
     }

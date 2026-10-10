@@ -19,16 +19,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.liqor.R
 import com.liqor.ui.theme.Ground
+import com.liqor.ui.theme.IllustrationSize
+import com.liqor.ui.theme.Space
 
 @Composable
 fun CoinLogo(
     asset: String,
     size: Dp,
     modifier: Modifier = Modifier,
-    imageInset: Dp = 0.dp,
+    imageInset: Dp = Space.none,
     containerColor: Color = Ground,
     borderColor: Color? = null,
 ) {
@@ -50,7 +51,7 @@ fun CoinLogo(
             .size(size)
             .clip(CircleShape)
             .background(containerColor)
-            .then(borderColor?.let { Modifier.border(1.dp, it, CircleShape) } ?: Modifier),
+            .then(borderColor?.let { Modifier.border(IllustrationSize.hairline, it, CircleShape) } ?: Modifier),
         contentAlignment = Alignment.Center,
     ) {
         if (image == null) {

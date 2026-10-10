@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,12 +23,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.liqor.R
 import com.liqor.domain.Level
 import com.liqor.ui.theme.CautionText
@@ -41,41 +38,43 @@ import com.liqor.ui.theme.SafeTint
 import com.liqor.ui.theme.StaleText
 import com.liqor.ui.theme.StaleTint
 import com.liqor.ui.theme.TextPrimary
+import com.liqor.ui.theme.CardPadding
+import com.liqor.ui.theme.ScreenSize
+import com.liqor.ui.theme.IllustrationSize
+import com.liqor.ui.theme.Radius
+import com.liqor.ui.theme.Space
+import com.liqor.ui.theme.TypeRamp
 
 @Composable
 fun PillButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    height: Dp = 58.dp,
+    height: Dp = ScreenSize.primaryButtonHeight,
     leadingGlyph: String? = null,
 ) {
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth().height(height),
-        shape = CircleShape,
+        shape = RoundedCornerShape(Radius.pill),
         color = TextPrimary,
         contentColor = Raised,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 20.dp),
+            modifier = Modifier.padding(horizontal = CardPadding.hero),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (leadingGlyph != null) {
                 Text(
                     leadingGlyph,
-                    style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp),
+                    style = TypeRamp.action,
                 )
-                Spacer(Modifier.size(8.dp))
+                Spacer(Modifier.size(Space.sm))
             }
             Text(
                 text,
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 12.sp,
-                    letterSpacing = 0.06.em,
-                ),
+                style = TypeRamp.button,
                 textAlign = TextAlign.Center,
             )
         }
@@ -89,9 +88,9 @@ fun TextAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier)
         modifier = modifier
             .clip(CircleShape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+            .padding(horizontal = Space.lg, vertical = Space.md),
         color = TextPrimary,
-        style = MaterialTheme.typography.labelLarge.copy(fontSize = 11.sp),
+        style = TypeRamp.action,
     )
 }
 
@@ -116,12 +115,9 @@ fun StatusChip(
         modifier = modifier
             .clip(CircleShape)
             .background(background)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = Space.sm, vertical = Space.xs),
         color = foreground,
-        style = MaterialTheme.typography.labelSmall.copy(
-            fontSize = 9.sp,
-            letterSpacing = 0.03.em,
-        ),
+        style = TypeRamp.label,
     )
 }
 
@@ -132,9 +128,9 @@ fun SampleChip(modifier: Modifier = Modifier) {
         modifier = modifier
             .clip(CircleShape)
             .background(TextPrimary)
-            .padding(horizontal = 9.dp, vertical = 5.dp),
+            .padding(horizontal = Space.sm, vertical = Space.chipVertical),
         color = Raised,
-        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+        style = TypeRamp.label,
     )
 }
 
@@ -142,18 +138,18 @@ fun SampleChip(modifier: Modifier = Modifier) {
 fun BrandMark(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .size(24.dp)
+            .size(IllustrationSize.brandMark)
             .clip(CircleShape)
             .background(TextPrimary),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(Modifier.size(14.dp)) {
+        Canvas(Modifier.size(Space.lg.minus(Space.xs))) {
             drawArc(
                 Color.White,
                 -30f,
                 300f,
                 false,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = StrokeCap.Round),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(Space.xs.toPx() / 2, cap = StrokeCap.Round),
             )
         }
     }
@@ -161,8 +157,8 @@ fun BrandMark(modifier: Modifier = Modifier) {
 
 @Composable
 fun LineIcon(kind: Int, modifier: Modifier = Modifier) {
-    Canvas(modifier.size(20.dp)) {
-        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(1.5.dp.toPx(), cap = StrokeCap.Round)
+    Canvas(modifier.size(IllustrationSize.smallIcon)) {
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(Space.xs.toPx() * 0.375f, cap = StrokeCap.Round)
         val c = Color(0xFF6B6862)
         val w = size.width
         val h = size.height

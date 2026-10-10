@@ -32,6 +32,7 @@ import com.liqor.ui.theme.Raised
 import com.liqor.ui.theme.Stale
 import com.liqor.ui.theme.TextPrimary
 import com.liqor.ui.theme.TextSecondary
+import com.liqor.ui.theme.TypeRamp
 
 @Composable
 fun Panel(
@@ -65,7 +66,7 @@ fun Panel(
                 Reading.NoPositions -> Text(
                     stringResource(R.string.panel_no_positions),
                     color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = TypeRamp.caption,
                 )
             }
             Spacer(Modifier.height(12.dp))
@@ -159,7 +160,7 @@ private fun UnknownPanelContent() {
             stringResource(R.string.panel_unknown_copy),
             modifier = Modifier.padding(top = 4.dp),
             color = TextSecondary,
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+            style = TypeRamp.caption,
         )
     }
 }
@@ -203,7 +204,7 @@ private fun PanelFooter(
                 ageText,
                 modifier = Modifier.padding(start = 4.dp).weight(1f),
                 color = if (unknown) Stale else TextSecondary,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                style = TypeRamp.caption,
             )
         } else {
             Spacer(Modifier.weight(1f))

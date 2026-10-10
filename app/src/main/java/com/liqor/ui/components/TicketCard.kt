@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.liqor.R
@@ -43,6 +42,12 @@ import com.liqor.ui.theme.Raised
 import com.liqor.ui.theme.Safe
 import com.liqor.ui.theme.Stale
 import com.liqor.ui.theme.TextPrimary
+import com.liqor.ui.theme.CardPadding
+import com.liqor.ui.theme.Elevation
+import com.liqor.ui.theme.IllustrationSize
+import com.liqor.ui.theme.Radius
+import com.liqor.ui.theme.Space
+import com.liqor.ui.theme.TypeRamp
 
 @Composable
 fun TicketCard(
@@ -65,13 +70,13 @@ fun TicketCard(
         modifier = if (panelContent) {
             modifier.fillMaxWidth()
         } else {
-            modifier.fillMaxWidth().shadow(7.dp, RoundedCornerShape(24.dp), clip = false)
+            modifier.fillMaxWidth().shadow(Elevation.card, RoundedCornerShape(Radius.lg), clip = false)
         },
         color = if (panelContent) Color.Transparent else Raised,
-        shape = if (panelContent) RoundedCornerShape(0.dp) else RoundedCornerShape(24.dp),
+        shape = if (panelContent) RoundedCornerShape(Space.none) else RoundedCornerShape(Radius.lg),
     ) {
         Column {
-            Column(Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
+            Column(Modifier.padding(CardPadding.hero)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -81,14 +86,11 @@ fun TicketCard(
                         Text(
                             title,
                             color = if (stale) Stale else TextPrimary,
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 9.sp,
-                                letterSpacing = 0.09.em,
-                            ),
+                            style = TypeRamp.label,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        Spacer(Modifier.size(4.dp))
+                        Spacer(Modifier.size(Space.xs))
                         Row(verticalAlignment = Alignment.Bottom) {
                             Text(
                                 distance,
@@ -103,7 +105,10 @@ fun TicketCard(
                             )
                             Text(
                                 stringResource(R.string.percent_sign),
-                                modifier = Modifier.padding(start = 2.dp, bottom = 7.dp),
+                                modifier = Modifier.padding(
+                                    start = Space.ticketPercentStart,
+                                    bottom = Space.ticketPercentBottom,
+                                ),
                                 color = if (stale) Stale else TextPrimary,
                                 style = MaterialTheme.typography.titleMedium.copy(
                                     fontSize = 18.sp,
@@ -116,21 +121,21 @@ fun TicketCard(
                     Gauge(
                         cushion = 1f - watched.travelled.toFloat(),
                         color = ringColor,
-                        diameter = 42.dp,
-                        stroke = 3.dp,
-                        modifier = Modifier.padding(top = 2.dp),
+                        diameter = IllustrationSize.ticketGauge,
+                        stroke = IllustrationSize.ticketGaugeStroke,
+                        modifier = Modifier.padding(top = Space.ticketGaugeTop),
                     )
                 }
                 Row(
-                    modifier = Modifier.padding(top = 2.dp),
+                    modifier = Modifier.padding(top = Space.ticketRowTop),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     StatusChip(watched.level, label = if (stale) stringResource(R.string.stale_label) else null, stale = stale)
                     Text(
                         sentence(watched),
-                        modifier = Modifier.padding(start = 8.dp),
+                        modifier = Modifier.padding(start = Space.sm),
                         color = if (stale) Stale else TextPrimary,
-                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        style = TypeRamp.row,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -141,26 +146,38 @@ fun TicketCard(
                 }
             }
             if (perforated) {
-                Box(Modifier.fillMaxWidth().padding(horizontal = 0.dp)) {
-                    Canvas(Modifier.fillMaxWidth().height(1.dp).padding(horizontal = 14.dp)) {
+                Box(Modifier.fillMaxWidth()) {
+                    Canvas(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(IllustrationSize.hairline)
+                            .padding(horizontal = Space.ticketDashInset),
+                    ) {
                         drawLine(
                             Hairline,
                             androidx.compose.ui.geometry.Offset.Zero,
                             androidx.compose.ui.geometry.Offset(size.width, 0f),
-                            1.dp.toPx(),
-                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.dp.toPx())),
+                            IllustrationSize.hairline.toPx(),
+                            pathEffect = PathEffect.dashPathEffect(
+                                floatArrayOf(Space.ticketDashSize.toPx(), Space.ticketDashSize.toPx()),
+                            ),
                         )
                     }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Box(Modifier.size(14.dp).clip(CircleShape).background(Ground))
-                        Box(Modifier.size(14.dp).clip(CircleShape).background(Ground))
+                        Box(Modifier.size(IllustrationSize.ticketPerforationSize).clip(CircleShape).background(Ground))
+                        Box(Modifier.size(IllustrationSize.ticketPerforationSize).clip(CircleShape).background(Ground))
                     }
                 }
             } else {
-                Spacer(Modifier.fillMaxWidth().height(1.dp).background(Hairline))
+                Spacer(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(IllustrationSize.hairline)
+                        .background(Hairline),
+                )
             }
             TrainLine(
                 entry = watched.position.entryPrice,
@@ -169,7 +186,7 @@ fun TicketCard(
                 travelled = watched.travelled.toFloat(),
                 level = watched.level,
                 stale = stale,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                modifier = Modifier.padding(horizontal = CardPadding.hero, vertical = Space.md),
             )
         }
     }

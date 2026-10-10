@@ -48,4 +48,15 @@ class IntroSnapshotTest {
     fun beforeAfterAtLargeFontScale() = captureScreen("intro_before_after_fontscale_1_3", 1.3f) {
         IntroScreen(samplePosition.at(0), onFinish = {})
     }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w400dp-h732dp-xxhdpi")
+    fun beforeAfterShortScreen() = captureScreen("intro_before_after_short") {
+        IntroScreen(samplePosition.at(0), onFinish = {})
+    }
+
+    @Test
+    fun watchesAtLargeFontScale() = captureScreen("intro_watches_fontscale_1_3", 1.3f) {
+        IntroScreen(samplePosition.at(0), onFinish = {}, initialPage = 1)
+    }
 }

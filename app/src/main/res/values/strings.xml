@@ -60,7 +60,7 @@
     <string name="notification_body">Liqor checks your open positions and lets you know when the distance gets closer.</string>
     <string name="notification_onboarding_title">Get a heads up when the distance shrinks</string>
     <string name="notification_onboarding_body">Liqor sends a notification when your closest position moves into Caution or Danger, so you can decide what to do while you are in another app.</string>
-    <string name="notification_service_footnote">Android also keeps a small Liqor notification while the bubble is running. That one is required by Android.</string>
+    <string name="notification_service_footnote">Android also shows a small Liqor notification while the bubble runs.</string>
     <string name="allow_notifications">Allow notifications</string>
     <string name="bubble_states_caption">BUBBLE STATES</string>
     <string name="bubble_state_unknown">Unknown</string>
@@ -81,6 +81,7 @@
     <string name="notification_preview_body">Your distance changed to Caution.</string>
     <string name="looking_for_positions">Looking for open positions</string>
     <string name="could_not_check_headline">Couldn\'t check. Trying again.</string>
+    <string name="could_not_check_body">Liqor couldn\'t read Solana or Jupiter just now. Check your connection and try again.</string>
     <string name="try_again">Try again</string>
     <string name="open_app_info">Open App info</string>
     <string name="disconnect">Disconnect</string>

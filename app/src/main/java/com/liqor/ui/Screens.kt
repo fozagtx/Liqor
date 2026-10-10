@@ -12,23 +12,21 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,7 +43,6 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -57,21 +54,31 @@ import com.liqor.domain.Watched
 import com.liqor.domain.distanceText
 import com.liqor.ui.components.BrandMark
 import com.liqor.ui.components.CoinLogo
+import com.liqor.ui.components.FormTemplate
+import com.liqor.ui.components.HeroTemplate
 import com.liqor.ui.components.LineIcon
-import com.liqor.ui.components.PillButton
 import com.liqor.ui.components.SampleChip
+import com.liqor.ui.components.ScreenHeader
 import com.liqor.ui.components.StatusChip
 import com.liqor.ui.components.TextAction
 import com.liqor.ui.components.TicketCard
+import com.liqor.ui.theme.CardPadding
 import com.liqor.ui.theme.CautionTint
+import com.liqor.ui.theme.DemoLayout
+import com.liqor.ui.theme.Elevation
 import com.liqor.ui.theme.Ground
 import com.liqor.ui.theme.Hairline
+import com.liqor.ui.theme.IllustrationSize
 import com.liqor.ui.theme.Motion
+import com.liqor.ui.theme.Radius
 import com.liqor.ui.theme.Raised
 import com.liqor.ui.theme.Safe
+import com.liqor.ui.theme.ScreenSize
+import com.liqor.ui.theme.Space
 import com.liqor.ui.theme.Stale
 import com.liqor.ui.theme.TextPrimary
 import com.liqor.ui.theme.TextSecondary
+import com.liqor.ui.theme.TypeRamp
 import kotlin.math.roundToInt
 
 @Composable
@@ -102,98 +109,67 @@ fun SplashScreen() {
         ) {
             Box(
                 Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(22.dp))
+                    .size(IllustrationSize.splashMark)
+                    .clip(RoundedCornerShape(Radius.md))
                     .background(TextPrimary),
                 contentAlignment = Alignment.Center,
             ) {
-                androidx.compose.foundation.Canvas(Modifier.size(42.dp)) {
+                androidx.compose.foundation.Canvas(Modifier.size(IllustrationSize.splashGauge)) {
                     drawArc(
                         color = Raised,
                         startAngle = -30f,
                         sweepAngle = sweepAngle,
                         useCenter = false,
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(4.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(Space.xs.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round),
                     )
                 }
             }
             Text(
                 stringResource(R.string.app_name),
-                modifier = Modifier.padding(top = 12.dp).stagger(1),
+                modifier = Modifier.padding(top = Space.md).stagger(1),
                 color = TextPrimary,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = (-0.05).em,
-                ),
+                style = TypeRamp.title,
             )
             Text(
                 stringResource(R.string.splash_tagline),
-                modifier = Modifier.padding(top = 4.dp).stagger(2),
+                modifier = Modifier.padding(top = Space.xs).stagger(2),
                 color = TextSecondary,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                style = TypeRamp.body,
             )
         }
         Text(
             stringResource(R.string.read_only_never_signs),
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp).stagger(3),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = Space.screenBottom).stagger(3),
             color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+            style = TypeRamp.caption,
         )
     }
 }
 
 @Composable
 fun FirstLaunchScreen(sample: Watched, onConnect: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Ground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().stagger(0),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BrandMark()
-            Text(
-                stringResource(R.string.app_name),
-                modifier = Modifier.padding(start = 7.dp),
-                color = TextPrimary,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+    HeroTemplate(
+        title = stringResource(R.string.first_launch_headline),
+        headerRight = { SampleChip() },
+        primaryText = stringResource(R.string.connect_wallet),
+        onPrimary = onConnect,
+        primaryGlyph = stringResource(R.string.wallet_glyph),
+        illustration = {
+            TicketCard(
+                watched = sample,
+                title = stringResource(R.string.ticket_distance_to_liquidation),
+                modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(Modifier.weight(1f))
-            SampleChip()
-        }
-        TicketCard(
-            watched = sample,
-            title = stringResource(R.string.ticket_distance_to_liquidation),
-            modifier = Modifier.sharedTicket(),
-        )
-        Text(
-            stringResource(R.string.first_launch_headline),
-            modifier = Modifier.stagger(1),
-            color = TextPrimary,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.05).em,
-                lineHeight = 27.sp,
-            ),
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            FeatureRow(0, stringResource(R.string.feature_bubble), Modifier.stagger(2))
-            FeatureRow(1, stringResource(R.string.feature_nudge), Modifier.stagger(3))
-            FeatureRow(2, stringResource(R.string.feature_read_only), Modifier.stagger(4))
-        }
-        Spacer(Modifier.weight(1f))
-        PillButton(
-            text = stringResource(R.string.connect_wallet),
-            onClick = onConnect,
-            modifier = Modifier.stagger(5),
-            leadingGlyph = stringResource(R.string.wallet_glyph),
-        )
-    }
+        },
+        afterBody = {
+            Spacer(Modifier.height(Space.lg))
+            FeatureRow(0, stringResource(R.string.feature_bubble))
+            Spacer(Modifier.height(Space.sm))
+            FeatureRow(1, stringResource(R.string.feature_nudge))
+            Spacer(Modifier.height(Space.sm))
+            FeatureRow(2, stringResource(R.string.feature_read_only))
+        },
+    )
 }
 
 @Composable
@@ -203,111 +179,70 @@ fun PositionsFoundScreen(
     wallet: String = stringResource(R.string.wallet_address),
 ) {
     val closest = reading.watched.minByOrNull { it.distance } ?: return
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Ground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().stagger(0),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BrandMark()
-            Text(
-                stringResource(R.string.app_name),
-                modifier = Modifier.padding(start = 7.dp),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-            )
-            Spacer(Modifier.weight(1f))
-            Text(
-                wallet,
-                modifier = Modifier
-                    .clip(CircleShape)
+    HeroTemplate(
+        title = null,
+        headerRight = {
+            Box(
+                Modifier
+                    .clip(RoundedCornerShape(Radius.pill))
                     .background(Raised)
-                    .padding(horizontal = 10.dp, vertical = 7.dp),
-                color = TextPrimary,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-            )
-        }
-        TicketCard(
-            closest,
-            stringResource(R.string.ticket_closest_to_liquidation),
-            closest = true,
-            modifier = Modifier.sharedTicket(),
-        )
-        Text(
-            stringResource(R.string.positions_open_count, reading.watched.size),
-            modifier = Modifier.stagger(1),
-            color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-        )
-        Column(
-            modifier = Modifier
-                .stagger(2)
-                .clip(RoundedCornerShape(18.dp))
-                .background(Raised)
-                .padding(horizontal = 14.dp),
-        ) {
-            reading.watched.take(2).forEachIndexed { index, watched ->
-                if (index > 0) androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(1.dp)) {
-                    drawLine(Hairline, androidx.compose.ui.geometry.Offset.Zero,
-                        androidx.compose.ui.geometry.Offset(size.width, 0f), 1.dp.toPx())
-                }
-                PositionRow(watched)
+                    .height(IllustrationSize.walletChipHeight)
+                    .padding(horizontal = Space.md),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(wallet, color = TextPrimary, style = TypeRamp.label)
             }
-        }
-        Spacer(Modifier.weight(1f))
-        PillButton(
-            text = stringResource(R.string.turn_on_bubble),
-            onClick = onTurnOnBubble,
-            modifier = Modifier.stagger(3),
-        )
-        Text(
-            stringResource(R.string.permissions_caption),
-            modifier = Modifier.fillMaxWidth().stagger(4),
-            color = TextSecondary,
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
-            textAlign = TextAlign.Center,
-        )
-    }
+        },
+        primaryText = stringResource(R.string.turn_on_bubble),
+        onPrimary = onTurnOnBubble,
+        secondaryCaption = stringResource(R.string.permissions_caption),
+        illustration = {
+            TicketCard(
+                closest,
+                stringResource(R.string.ticket_closest_to_liquidation),
+                closest = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        afterBody = {
+            Text(
+                stringResource(R.string.positions_open_count, reading.watched.size),
+                color = TextSecondary,
+                style = TypeRamp.label,
+            )
+            Spacer(Modifier.height(Space.sm))
+            Column(
+                modifier = Modifier.clip(RoundedCornerShape(Radius.md))
+                    .background(Raised)
+                    .padding(horizontal = CardPadding.content),
+            ) {
+                reading.watched.take(2).forEachIndexed { index, watched ->
+                    if (index > 0) androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(IllustrationSize.hairline)) {
+                        drawLine(Hairline, androidx.compose.ui.geometry.Offset.Zero,
+                            androidx.compose.ui.geometry.Offset(size.width, 0f), IllustrationSize.hairline.toPx())
+                    }
+                    PositionRow(watched)
+                }
+            }
+        },
+    )
 }
 
 @Composable
 fun NoPositionsScreen(sample: Watched, onShowSample: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Ground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        BrandHeader(Modifier.stagger(0))
-        Text(
-            stringResource(R.string.no_positions_headline),
-            modifier = Modifier.stagger(1),
-            color = TextPrimary,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.04).em,
-            ),
-        )
-        TicketCard(
-            watched = sample,
-            title = stringResource(R.string.ticket_distance_to_liquidation),
-            isSample = true,
-            modifier = Modifier.sharedTicket(),
-        )
-        Spacer(Modifier.weight(1f))
-        PillButton(
-            stringResource(R.string.show_sample_bubble),
-            onClick = onShowSample,
-            modifier = Modifier.stagger(2),
-        )
-    }
+    HeroTemplate(
+        title = stringResource(R.string.no_positions_headline),
+        primaryText = stringResource(R.string.show_sample_bubble),
+        onPrimary = onShowSample,
+        illustration = {
+            TicketCard(
+                watched = sample,
+                title = stringResource(R.string.ticket_distance_to_liquidation),
+                isSample = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+    )
 }
 
 @Composable
@@ -317,43 +252,44 @@ fun LoadingScreen() {
             .fillMaxSize()
             .background(Ground)
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(22.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(
+                start = Space.screenHorizontal,
+                top = Space.screenTop,
+                end = Space.screenHorizontal,
+                bottom = Space.screenBottom,
+            ),
     ) {
-        BrandHeader(Modifier.stagger(0))
-        Text(
-            stringResource(R.string.looking_for_positions),
-            modifier = Modifier.padding(top = 24.dp).stagger(1),
-            color = TextPrimary,
-            style = MaterialTheme.typography.titleMedium,
-        )
+        ScreenHeader()
+        Box(
+            Modifier.fillMaxWidth().weight(1f),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                stringResource(R.string.looking_for_positions),
+                modifier = Modifier.stagger(1),
+                color = TextSecondary,
+                style = TypeRamp.body,
+            )
+        }
     }
 }
 
 @Composable
 fun CouldNotCheckScreen(onTryAgain: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Ground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    FormTemplate(
+        primaryText = stringResource(R.string.try_again),
+        onPrimary = onTryAgain,
     ) {
-        BrandHeader(Modifier.stagger(0))
-        Spacer(Modifier.weight(1f))
         Text(
             stringResource(R.string.could_not_check_headline),
-            modifier = Modifier.stagger(1),
             color = TextPrimary,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+            style = TypeRamp.title,
         )
-        Spacer(Modifier.weight(1f))
-        PillButton(
-            stringResource(R.string.try_again),
-            onTryAgain,
-            modifier = Modifier.stagger(2),
+        Spacer(Modifier.height(Space.md))
+        Text(
+            stringResource(R.string.could_not_check_body),
+            color = TextSecondary,
+            style = TypeRamp.body,
         )
     }
 }
@@ -369,20 +305,11 @@ fun HomeScreen(
     val live = reading as? Reading.Live
     val watched = if (sampleMode) sample else live?.let(::closestPosition)
     val canRetry = !sampleMode && reading !is Reading.Live && reading != Reading.NoPositions
-    val actionIndex = when {
-        watched != null -> 1
-        reading == Reading.NoPositions -> 2
-        else -> 3
-    }
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Ground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+    FormTemplate(
+        primaryText = if (canRetry) stringResource(R.string.try_again) else null,
+        onPrimary = if (canRetry) onRetry else null,
+        secondaryContent = { TextAction(stringResource(R.string.disconnect), onDisconnect) },
     ) {
-        BrandHeader(Modifier.stagger(0))
         when {
             watched != null -> TicketCard(
                 watched = watched,
@@ -391,34 +318,19 @@ fun HomeScreen(
                     else R.string.ticket_closest_to_liquidation,
                 ),
                 isSample = sampleMode,
-                modifier = Modifier.sharedTicket(),
+                modifier = Modifier.fillMaxWidth(),
             )
             reading == Reading.NoPositions -> Text(
                 stringResource(R.string.panel_no_positions),
-                modifier = Modifier.stagger(1),
                 color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium,
+                style = TypeRamp.body,
             )
             else -> Text(
                 stringResource(R.string.could_not_check_headline),
-                modifier = Modifier.stagger(1),
                 color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium,
+                style = TypeRamp.body,
             )
         }
-        Spacer(Modifier.weight(1f))
-        if (canRetry) {
-            TextAction(
-                stringResource(R.string.try_again),
-                onRetry,
-                Modifier.stagger(if (watched != null) 1 else 2),
-            )
-        }
-        TextAction(
-            stringResource(R.string.disconnect),
-            onDisconnect,
-            Modifier.stagger(actionIndex),
-        )
     }
 }
 
@@ -430,81 +342,68 @@ fun OverlayPermissionScreen(
     stillOff: Boolean = false,
     demoTimeMs: Long? = null,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Ground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+    FormTemplate(
+        stepLabel = stringResource(R.string.step_one_of_two),
+        currentStep = 1,
+        primaryText = stringResource(if (stillOff) R.string.try_again else R.string.open_settings),
+        onPrimary = onOpenSettings,
+        primaryGlyph = if (stillOff) null else stringResource(R.string.external_glyph),
+        secondaryContent = {
+            TextAction(
+                stringResource(if (stillOff) R.string.overlay_continue_without_bubble else R.string.not_now),
+                onNotNow,
+            )
+        },
     ) {
-        StepHeader(stringResource(R.string.step_one_of_two), 1, Modifier.stagger(0))
         Text(
             stringResource(if (stillOff) R.string.overlay_still_off_title else R.string.overlay_setup_title),
-            modifier = Modifier.stagger(1),
             color = TextPrimary,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.04).em,
-            ),
+            style = TypeRamp.title,
         )
+        Spacer(Modifier.height(Space.xl))
         if (stillOff) {
             Text(
                 stringResource(R.string.overlay_still_off_body),
-                modifier = Modifier.stagger(2),
                 color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium,
+                style = TypeRamp.body,
             )
+            Spacer(Modifier.height(Space.xl))
         }
-        OverlayStepsCard(Modifier.stagger(3))
-        PermissionSettingsCard(
-            Modifier.stagger(4),
-            demoTimeMs,
-        )
-        Text(
-            stringResource(R.string.overlay_settings_helper),
-            modifier = Modifier.stagger(5),
-            color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-        )
-        Row(
-            modifier = Modifier
-                .stagger(6)
-                .clip(RoundedCornerShape(14.dp))
-                .background(Raised)
-                .padding(12.dp),
-            verticalAlignment = Alignment.Top,
+        OverlayStepsCard()
+        if (!stillOff) {
+            Spacer(Modifier.height(Space.cardStack))
+            PermissionSettingsCard(Modifier.fillMaxWidth(), demoTimeMs)
+        }
+        Spacer(Modifier.height(Space.cardStack))
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Raised,
+            shape = RoundedCornerShape(Radius.md),
+            shadowElevation = Elevation.flat,
         ) {
-            Text(
-                stringResource(R.string.info_glyph),
-                color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                stringResource(R.string.overlay_restricted_tip),
-                modifier = Modifier.padding(start = 8.dp),
-                color = TextSecondary,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
-            )
+            Column(Modifier.padding(CardPadding.content)) {
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(
+                        stringResource(R.string.info_glyph),
+                        color = TextSecondary,
+                        style = TypeRamp.row,
+                    )
+                    Spacer(Modifier.width(Space.sm))
+                    Text(
+                        stringResource(R.string.overlay_restricted_tip),
+                        Modifier.weight(1f),
+                        color = TextSecondary,
+                        style = TypeRamp.caption,
+                    )
+                }
+                Spacer(Modifier.height(Space.xs))
+                TextAction(
+                    stringResource(R.string.open_app_info),
+                    onOpenAppInfo,
+                    Modifier.align(Alignment.End),
+                )
+            }
         }
-        Spacer(Modifier.weight(1f))
-        PillButton(
-            stringResource(if (stillOff) R.string.try_again else R.string.open_settings),
-            onClick = onOpenSettings,
-            modifier = Modifier.stagger(7),
-            leadingGlyph = if (stillOff) null else stringResource(R.string.external_glyph),
-        )
-        TextAction(
-            stringResource(R.string.open_app_info),
-            onOpenAppInfo,
-            Modifier.align(Alignment.CenterHorizontally).stagger(8),
-        )
-        TextAction(
-            stringResource(if (stillOff) R.string.overlay_continue_without_bubble else R.string.not_now),
-            onNotNow,
-            Modifier.align(Alignment.CenterHorizontally).stagger(9),
-        )
     }
 }
 
@@ -523,119 +422,74 @@ fun BubbleOnScreen(onNext: () -> Unit) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Ground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        StepHeader(stringResource(R.string.step_one_of_two), 1, Modifier.stagger(0))
-        Spacer(Modifier.weight(1f))
-        Column(
-            Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(Modifier.size(96.dp), contentAlignment = Alignment.Center) {
+    HeroTemplate(
+        title = stringResource(R.string.bubble_on_title),
+        body = stringResource(R.string.bubble_on_body),
+        stepLabel = stringResource(R.string.step_one_of_two),
+        currentStep = 1,
+        primaryText = stringResource(R.string.bubble_on_next),
+        onPrimary = onNext,
+        centeredText = true,
+        illustration = {
+            Box(Modifier.size(IllustrationSize.bubbleOnGauge), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize()) {
                     drawArc(
                         Safe,
                         startAngle = -90f,
                         sweepAngle = sweep.value,
                         useCenter = false,
-                        topLeft = Offset(4.dp.toPx(), 4.dp.toPx()),
-                        size = Size(size.width - 8.dp.toPx(), size.height - 8.dp.toPx()),
-                        style = Stroke(5.dp.toPx(), cap = StrokeCap.Round),
+                        topLeft = Offset(Space.xs.toPx(), Space.xs.toPx()),
+                        size = Size(size.width - Space.sm.toPx(), size.height - Space.sm.toPx()),
+                        style = Stroke(Space.xs.toPx() + Space.xs.toPx() / 4, cap = StrokeCap.Round),
                     )
                 }
-                Canvas(Modifier.size(34.dp)) {
+                Canvas(Modifier.size(IllustrationSize.featureIcon)) {
                     val checkCorner = Offset(size.width * 0.42f, size.height * 0.76f)
                     drawLine(
                         Safe,
                         Offset(size.width * 0.16f, size.height * 0.52f),
                         checkCorner,
-                        strokeWidth = 5.dp.toPx(),
+                        strokeWidth = Space.xs.toPx() + Space.xs.toPx() / 4,
                         cap = StrokeCap.Round,
                     )
                     drawLine(
                         Safe,
                         checkCorner,
                         Offset(size.width * 0.84f, size.height * 0.24f),
-                        strokeWidth = 5.dp.toPx(),
+                        strokeWidth = Space.xs.toPx() + Space.xs.toPx() / 4,
                         cap = StrokeCap.Round,
                     )
                 }
             }
-            Text(
-                stringResource(R.string.bubble_on_title),
-                modifier = Modifier.padding(top = 22.dp),
-                color = TextPrimary,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = (-0.04).em,
-                ),
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                stringResource(R.string.bubble_on_body),
-                modifier = Modifier.padding(top = 8.dp),
-                color = TextSecondary,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-            )
-        }
-        Spacer(Modifier.weight(1f))
-        PillButton(stringResource(R.string.bubble_on_next), onNext, Modifier.stagger(1))
-    }
+        },
+    )
 }
 
 @Composable
 fun NotificationPermissionScreen(onAllow: () -> Unit, onNotNow: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Ground)
-            .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 22.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        StepHeader(stringResource(R.string.step_two_of_two), 2, Modifier.stagger(0))
-        Text(
-            stringResource(R.string.notification_onboarding_title),
-            modifier = Modifier.stagger(1),
-            color = TextPrimary,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.04).em,
-            ),
-        )
-        Text(
-            stringResource(R.string.notification_onboarding_body),
-            modifier = Modifier.stagger(2),
-            color = TextSecondary,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        NotificationPreview(Modifier.stagger(3))
-        Spacer(Modifier.weight(1f))
-        PillButton(
-            stringResource(R.string.allow_notifications),
-            onAllow,
-            modifier = Modifier.stagger(4),
-        )
-        TextAction(
-            stringResource(R.string.not_now),
-            onNotNow,
-            Modifier.align(Alignment.CenterHorizontally).stagger(5),
-        )
-        Text(
-            stringResource(R.string.notification_service_footnote),
-            modifier = Modifier.fillMaxWidth().stagger(6),
-            color = TextSecondary,
-            style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp, lineHeight = 10.sp),
-            textAlign = TextAlign.Center,
-        )
-    }
+    HeroTemplate(
+        title = stringResource(R.string.notification_onboarding_title),
+        body = stringResource(R.string.notification_onboarding_body),
+        stepLabel = stringResource(R.string.step_two_of_two),
+        currentStep = 2,
+        primaryText = stringResource(R.string.allow_notifications),
+        onPrimary = onAllow,
+        secondaryContent = {
+            TextAction(stringResource(R.string.not_now), onNotNow)
+        },
+        illustration = {
+            NotificationPreview(Modifier.fillMaxSize())
+        },
+        afterBody = {
+            Spacer(Modifier.height(Space.lg))
+            Text(
+                stringResource(R.string.notification_service_footnote),
+                color = TextSecondary,
+                style = TypeRamp.caption,
+                textAlign = TextAlign.Center,
+            )
+        },
+    )
 }
 
 @Composable
@@ -643,7 +497,7 @@ private fun FeatureRow(icon: Int, text: String, modifier: Modifier = Modifier) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Box(
             Modifier
-                .size(26.dp)
+                .size(IllustrationSize.featureIcon)
                 .clip(CircleShape)
                 .background(Raised),
             contentAlignment = Alignment.Center,
@@ -652,9 +506,9 @@ private fun FeatureRow(icon: Int, text: String, modifier: Modifier = Modifier) {
         }
         Text(
             text,
-            modifier = Modifier.padding(start = 10.dp),
+            modifier = Modifier.padding(start = Space.sm),
             color = TextPrimary,
-            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+            style = TypeRamp.row,
         )
     }
 }
@@ -670,73 +524,29 @@ fun PositionRow(watched: Watched, modifier: Modifier = Modifier, stale: Boolean 
         stringResource(R.string.position_details, leverage, level)
     }
     Row(
-        modifier = modifier.fillMaxWidth().padding(vertical = 10.dp),
+        modifier = modifier.fillMaxWidth().padding(vertical = Space.rowVertical),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        CoinLogo(position.asset, 28.dp)
-        Column(Modifier.weight(1f).padding(start = 9.dp)) {
+        CoinLogo(position.asset, IllustrationSize.rowLogo)
+        Column(Modifier.weight(1f).padding(start = Space.sm)) {
             Text(
                 stringResource(R.string.position_name, position.asset, position.side),
                 color = TextPrimary,
-                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                style = TypeRamp.bodyStrong,
             )
             Text(
                 details,
                 color = TextSecondary,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                style = TypeRamp.caption,
             )
         }
         StatusChip(watched.level, label = "${distanceText(watched.distance)}%", stale = stale)
         Text(
             stringResource(R.string.chevron_glyph),
-            modifier = Modifier.padding(start = 8.dp),
+            modifier = Modifier.padding(start = Space.sm),
             color = TextSecondary,
-            style = MaterialTheme.typography.titleMedium,
+            style = TypeRamp.action,
         )
-    }
-}
-
-@Composable
-private fun BrandHeader(modifier: Modifier = Modifier) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        BrandMark()
-        Text(
-            stringResource(R.string.app_name),
-            modifier = Modifier.padding(start = 7.dp),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-        )
-    }
-}
-
-@Composable
-private fun StepHeader(step: String, currentStep: Int, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            BrandHeader()
-            Text(
-                step,
-                color = TextSecondary,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-            )
-        }
-        Row(
-            Modifier.fillMaxWidth().padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            repeat(2) { index ->
-                Box(
-                    Modifier
-                        .weight(1f)
-                        .height(3.dp)
-                        .clip(CircleShape)
-                        .background(if (index < currentStep) TextPrimary else Hairline),
-                )
-            }
-        }
     }
 }
 
@@ -750,31 +560,53 @@ private fun OverlayStepsCard(modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = Raised,
-        shape = RoundedCornerShape(18.dp),
-        shadowElevation = 4.dp,
+        shape = RoundedCornerShape(Radius.md),
+        shadowElevation = Elevation.card,
     ) {
-        Column(
-            Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        Column(Modifier.padding(CardPadding.content)) {
             steps.forEachIndexed { index, resource ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier.size(20.dp).clip(CircleShape).background(TextPrimary),
-                        contentAlignment = Alignment.Center,
+                Column {
+                    Row(
+                        Modifier.fillMaxWidth().heightIn(min = IllustrationSize.stepRowHeight),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            "${index + 1}",
-                            color = Raised,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                        )
+                        Box(
+                            Modifier.size(IllustrationSize.stepNumberLarge).clip(CircleShape).background(TextPrimary),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("${index + 1}", color = Raised, style = TypeRamp.label)
+                        }
+                        Spacer(Modifier.width(Space.lg))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                stringResource(resource),
+                                color = TextPrimary,
+                                style = TypeRamp.row,
+                            )
+                            if (index == 1) {
+                                Text(
+                                    stringResource(R.string.overlay_settings_helper),
+                                    color = TextSecondary,
+                                    style = TypeRamp.caption,
+                                )
+                            }
+                        }
                     }
-                    Text(
-                        stringResource(resource),
-                        Modifier.weight(1f).padding(start = 10.dp),
-                        color = TextPrimary,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
+                    if (index < steps.lastIndex) {
+                        androidx.compose.foundation.Canvas(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(start = IllustrationSize.stepNumberLarge + Space.lg)
+                                .height(IllustrationSize.hairline),
+                        ) {
+                            drawLine(
+                                Hairline,
+                                androidx.compose.ui.geometry.Offset.Zero,
+                                androidx.compose.ui.geometry.Offset(size.width, 0f),
+                                IllustrationSize.hairline.toPx(),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -806,20 +638,20 @@ private fun PermissionSettingsCard(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = Raised,
-        shape = RoundedCornerShape(18.dp),
-        shadowElevation = 4.dp,
+        shape = RoundedCornerShape(Radius.md),
+        shadowElevation = Elevation.card,
     ) {
-        Column(Modifier.padding(14.dp)) {
+        Column(Modifier.padding(CardPadding.content)) {
             Text(
                 stringResource(R.string.overlay_what_you_see),
                 color = TextSecondary,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                style = TypeRamp.label,
             )
             Text(
                 stringResource(R.string.overlay_display_over_apps),
-                modifier = Modifier.padding(top = 8.dp, bottom = 12.dp),
+                modifier = Modifier.padding(top = Space.sm, bottom = Space.md),
                 color = TextPrimary,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                style = TypeRamp.bodyStrong,
             )
             Box(Modifier.fillMaxWidth()) {
                 PermissionRow(
@@ -831,18 +663,23 @@ private fun PermissionSettingsCard(
                     Box(
                         Modifier
                             .align(Alignment.CenterEnd)
-                            .offset(x = (-42f + 37f * fingerProgress).dp)
-                            .size(24.dp)
+                            .offset(
+                                x = (
+                                    -DemoLayout.settingFingerStartOffset.value +
+                                        DemoLayout.settingFingerTravel.value * fingerProgress
+                                    ).dp,
+                            )
+                            .size(IllustrationSize.demoFinger)
                             .graphicsLayer(alpha = fingerAlpha)
                             .clip(CircleShape)
                             .background(TextPrimary.copy(alpha = 0.25f))
-                            .border(1.5.dp, TextPrimary.copy(alpha = 0.5f), CircleShape),
+                            .border(Space.xs * 0.375f, TextPrimary.copy(alpha = 0.5f), CircleShape),
                     )
                 }
             }
-            androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(1.dp)) {
+            androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(IllustrationSize.hairline)) {
                 drawLine(Hairline, androidx.compose.ui.geometry.Offset.Zero,
-                    androidx.compose.ui.geometry.Offset(size.width, 0f), 1.dp.toPx())
+                    androidx.compose.ui.geometry.Offset(size.width, 0f), IllustrationSize.hairline.toPx())
             }
             PermissionRow(stringResource(R.string.overlay_any_other_app), "", 0f)
         }
@@ -852,28 +689,28 @@ private fun PermissionSettingsCard(
 @Composable
 private fun PermissionRow(name: String, status: String, switchProgress: Float) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = Space.rowVertical),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BrandMark()
-        Column(Modifier.weight(1f).padding(start = 8.dp)) {
-            Text(name, color = TextPrimary, style = MaterialTheme.typography.bodySmall)
+        Column(Modifier.weight(1f).padding(start = Space.sm)) {
+            Text(name, color = TextPrimary, style = TypeRamp.row)
             if (status.isNotEmpty()) {
-                Text(status, color = TextSecondary, style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp))
+                Text(status, color = TextSecondary, style = TypeRamp.caption)
             }
         }
         Box(
             Modifier
-                .width(34.dp)
-                .height(20.dp)
+                .width(IllustrationSize.switchTrackWidth)
+                .height(IllustrationSize.switchTrackHeight)
                 .clip(CircleShape)
                 .background(lerp(Hairline, TextPrimary, switchProgress.coerceIn(0f, 1f))),
         ) {
             Box(
                 Modifier
                     .align(Alignment.CenterStart)
-                    .offset(x = (2.dp + 14.dp * switchProgress.coerceIn(0f, 1f)))
-                    .size(16.dp)
+                    .offset(x = (Space.xs / 2 + IllustrationSize.switchThumbTravel * switchProgress.coerceIn(0f, 1f)))
+                    .size(IllustrationSize.switchThumb)
                     .clip(CircleShape)
                     .background(Raised),
             )
@@ -913,25 +750,88 @@ private fun smoothStep(value: Float): Float {
 @Composable
 private fun NotificationPreview(modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier.fillMaxSize(),
         color = Raised,
-        shape = RoundedCornerShape(18.dp),
-        shadowElevation = 4.dp,
+        shape = RoundedCornerShape(Radius.lg),
+        shadowElevation = Elevation.card,
     ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            BrandMark()
-            Column(Modifier.padding(start = 10.dp)) {
-                Text(
-                    stringResource(R.string.notification_preview_title),
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .size(width = IllustrationSize.phoneWidth, height = IllustrationSize.demoPhoneHeight),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(Radius.sm))
+                        .background(Ground)
+                        .border(IllustrationSize.hairline, Hairline, RoundedCornerShape(Radius.sm)),
                 )
-                Text(
-                    stringResource(R.string.notification_preview_body),
-                    modifier = Modifier.padding(top = 4.dp),
-                    color = TextSecondary,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
-                )
+                Column(
+                    Modifier.fillMaxSize().padding(
+                        horizontal = CardPadding.inner,
+                        vertical = CardPadding.content,
+                    ),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        BrandMark()
+                        Text(
+                            stringResource(R.string.app_name),
+                            Modifier.padding(start = Space.sm),
+                            color = TextPrimary,
+                            style = TypeRamp.bodyStrong,
+                        )
+                    }
+                    Surface(
+                        Modifier.fillMaxWidth().padding(top = CardPadding.content),
+                        color = Raised,
+                        shape = RoundedCornerShape(Radius.md),
+                        shadowElevation = Elevation.card,
+                    ) {
+                        Row(
+                            Modifier.padding(CardPadding.content),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            BrandMark()
+                            Column(Modifier.padding(start = Space.sm)) {
+                                Text(
+                                    stringResource(R.string.notification_preview_title),
+                                    color = TextPrimary,
+                                    style = TypeRamp.bodyStrong,
+                                )
+                                Text(
+                                    stringResource(R.string.notification_preview_body),
+                                    modifier = Modifier.padding(top = Space.xs),
+                                    color = TextSecondary,
+                                    style = TypeRamp.caption,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(Space.md))
+                    repeat(3) { index ->
+                        androidx.compose.foundation.Canvas(
+                            Modifier.fillMaxWidth(if (index == 0) 0.88f else 0.62f).height(IllustrationSize.skeletonMain),
+                        ) {
+                            drawRoundRect(Hairline, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2))
+                        }
+                        Spacer(Modifier.height(Space.sm))
+                    }
+                }
+                Box(
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .offset(x = Space.xl)
+                        .size(IllustrationSize.notificationBubble)
+                        .clip(CircleShape)
+                        .background(TextPrimary)
+                        .border(IllustrationSize.hairline, Raised, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(
+                        Modifier.size(IllustrationSize.smallIcon).clip(CircleShape).background(Safe),
+                    )
+                }
             }
         }
     }

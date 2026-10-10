@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,11 +21,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import com.liqor.R
 import com.liqor.domain.Level
 import com.liqor.domain.usd
@@ -37,6 +33,7 @@ import com.liqor.ui.theme.Raised
 import com.liqor.ui.theme.Safe
 import com.liqor.ui.theme.Stale
 import com.liqor.ui.theme.TextPrimary
+import com.liqor.ui.theme.TypeRamp
 import kotlin.math.roundToInt
 
 @Composable
@@ -102,11 +99,7 @@ fun TrainLine(
                 .background(TextPrimary)
                 .padding(horizontal = 8.dp, vertical = 3.dp),
             color = Raised,
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontSize = 9.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.04.em,
-            ),
+            style = TypeRamp.label,
             maxLines = 1,
         )
         Row(
@@ -118,12 +111,12 @@ fun TrainLine(
             Text(
                 stringResource(R.string.train_entry_price, usd(entry)),
                 color = if (stale) Stale else TextPrimary,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                style = TypeRamp.label,
             )
             Text(
                 stringResource(R.string.train_liquidation_price, usd(liq)),
                 color = if (stale) Stale else TextPrimary,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                style = TypeRamp.label,
             )
         }
     }

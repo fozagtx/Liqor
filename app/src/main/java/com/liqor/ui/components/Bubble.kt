@@ -48,10 +48,15 @@ import com.liqor.ui.theme.Raised
 import com.liqor.ui.theme.Safe
 import com.liqor.ui.theme.Stale
 import com.liqor.ui.theme.TextPrimary
+import com.liqor.ui.theme.TypeRamp
 import kotlinx.coroutines.launch
 
 @Composable
-fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
+fun Bubble(
+    ui: BubbleUi,
+    modifier: Modifier = Modifier,
+    showSampleTag: Boolean = true,
+) {
     val asset = ui.asset
     val side = ui.side
     val tagText = when {
@@ -165,10 +170,7 @@ fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
                             Text(
                                 text = stringResource(R.string.percent_sign),
                                 color = numberColor,
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 10.sp,
-                                    letterSpacing = (-0.04).em,
-                                ),
+                        style = TypeRamp.label.copy(letterSpacing = (-0.04).em),
                             )
                         }
                     }
@@ -188,12 +190,12 @@ fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
                     Text(
                         text = stringResource(R.string.clock_glyph),
                         color = Raised,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        style = TypeRamp.caption,
                     )
                 }
             }
         }
-        if (ui.state == BubbleState.Sample) {
+        if (ui.state == BubbleState.Sample && showSampleTag) {
             Text(
                 text = stringResource(R.string.sample_tag),
                 modifier = Modifier
@@ -202,7 +204,7 @@ fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
                     .background(TextPrimary)
                     .padding(horizontal = 6.dp, vertical = 2.dp),
                 color = Raised,
-                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                style = TypeRamp.label,
                 textAlign = TextAlign.Center,
             )
         } else if (tagText != null) {
@@ -225,11 +227,7 @@ fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
                     Text(
                         text = tagText,
                         color = Raised,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.08.em,
-                        ),
+                        style = TypeRamp.label,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
