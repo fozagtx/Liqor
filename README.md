@@ -12,13 +12,14 @@ Open a leveraged Jupiter Perps trade, switch to X, Telegram or a game, and the m
   </tr>
   <tr>
     <td><img src="screenshots/first-launch.png" width="240" alt="First launch with sample"></td>
-    <td><img src="screenshots/notification.png" width="240" alt="Ongoing notification"></td>
+    <td><img src="screenshots/overlay-permission.png" width="240" alt="Overlay permission steps"></td>
+    <td><img src="screenshots/notification-permission.png" width="240" alt="Notification permission"></td>
   </tr>
 </table>
 
 <img src="screenshots/bubble-states.png" width="720" alt="Bubble states: safe, caution, danger, stale, unknown, sample">
 
-The phone screenshots are from a live run against mainnet positions. The bubble states are rendered from captured mainnet data.
+The first row is from a live run against mainnet positions. The second row and the bubble states are rendered from the app's snapshot tests.
 
 ## What it does
 
