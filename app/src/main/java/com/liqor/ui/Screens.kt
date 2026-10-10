@@ -42,6 +42,7 @@ import com.liqor.domain.Reading
 import com.liqor.domain.Watched
 import com.liqor.domain.distanceText
 import com.liqor.ui.components.BrandMark
+import com.liqor.ui.components.CoinLogo
 import com.liqor.ui.components.LineIcon
 import com.liqor.ui.components.PillButton
 import com.liqor.ui.components.SampleChip
@@ -554,15 +555,7 @@ fun PositionRow(watched: Watched, modifier: Modifier = Modifier, stale: Boolean 
         modifier = modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            Modifier.size(28.dp).clip(CircleShape).background(Ground),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                position.asset.take(1),
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-            )
-        }
+        CoinLogo(position.asset, 28.dp)
         Column(Modifier.weight(1f).padding(start = 9.dp)) {
             Text(
                 stringResource(R.string.position_name, position.asset, position.side),

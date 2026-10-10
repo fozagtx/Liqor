@@ -31,16 +31,3 @@ jobs:
         with:
           files: liqor-*.apk
           generate_release_notes: true
-
-  worker:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: worker
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: "22"
-      - run: npm ci
-      - run: npx tsc --noEmit

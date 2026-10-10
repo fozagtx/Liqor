@@ -3,6 +3,7 @@ package com.liqor.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -210,24 +211,30 @@ fun Bubble(ui: BubbleUi, modifier: Modifier = Modifier) {
             CompositionLocalProvider(
                 LocalDensity provides Density(density.density, 1f),
             ) {
-                Text(
-                    text = tagText,
+                Row(
                     modifier = Modifier
                         .offset(y = (-4).dp)
-                        .widthIn(max = 56.dp)
+                        .widthIn(max = 76.dp)
                         .clip(CircleShape)
                         .background(tagBackground)
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
-                    color = Raised,
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.08.em,
-                    ),
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                        .padding(start = 3.dp, end = 6.dp, top = 2.dp, bottom = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (asset != null) CoinLogo(asset, 12.dp)
+                    Text(
+                        text = tagText,
+                        color = Raised,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.08.em,
+                        ),
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }

@@ -59,8 +59,8 @@ import androidx.savedstate.SavedStateRegistryOwner
 import com.liqor.Config
 import com.liqor.MainActivity
 import com.liqor.R
+import com.liqor.data.DirectChainReader
 import com.liqor.data.Prefs
-import com.liqor.data.WorkerClient
 import com.liqor.domain.AlertGate
 import com.liqor.domain.Freshness
 import com.liqor.domain.Level
@@ -89,7 +89,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 class WatchService : LifecycleService() {
     private lateinit var prefs: Prefs
     private lateinit var windowManager: WindowManager
-    private val worker = WorkerClient()
+    private val reader = DirectChainReader()
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val screenOnRequests = Channel<Unit>(Channel.CONFLATED)
     private val alertGate = AlertGate(System::currentTimeMillis)
@@ -223,7 +223,7 @@ class WatchService : LifecycleService() {
     private suspend fun fetchLive() {
         if (prefs.mode != Prefs.MODE_LIVE) return
         val wallet = prefs.walletAddress
-        reading = if (wallet == null) Reading.CouldNotCheck else worker.positions(wallet)
+        reading = if (wallet == null) Reading.CouldNotCheck else reader.positions(wallet)
         (reading as? Reading.Live)?.let { lastSuccessfulServerTime = it.serverTime }
         freshness = if (reading is Reading.Live) freshness else Freshness.Unknown
 

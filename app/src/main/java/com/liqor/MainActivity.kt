@@ -17,8 +17,8 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.liqor.data.DirectChainReader
 import com.liqor.data.Prefs
-import com.liqor.data.WorkerClient
 import com.liqor.domain.Reading
 import com.liqor.domain.samplePosition
 import com.liqor.ui.CouldNotCheckScreen
@@ -46,7 +46,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private lateinit var resultSender: ActivityResultSender
     private lateinit var prefs: Prefs
-    private val worker = WorkerClient()
+    private val reader = DirectChainReader()
     private val adapter by lazy {
         MobileWalletAdapter(
             ConnectionIdentity(
@@ -187,7 +187,7 @@ class MainActivity : ComponentActivity() {
         val address = walletAddress ?: return navigateRoot(AppScreen.FirstLaunch, false)
         if (showLoading && screen != AppScreen.Loading) navigate(AppScreen.Loading)
         lifecycleScope.launch {
-            reading = worker.positions(address)
+            reading = reader.positions(address)
             if (showLoading) {
                 navigate(when (reading) {
                     is Reading.Live -> AppScreen.PositionsFound
