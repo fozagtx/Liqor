@@ -276,19 +276,23 @@ fun LoadingScreen() {
 }
 
 @Composable
-fun CouldNotCheckScreen(onTryAgain: () -> Unit) {
+fun CouldNotCheckScreen(walletFailed: Boolean = false, onTryAgain: () -> Unit) {
     FormTemplate(
         primaryText = stringResource(R.string.try_again),
         onPrimary = onTryAgain,
     ) {
         Text(
-            stringResource(R.string.could_not_check_headline),
+            stringResource(
+                if (walletFailed) R.string.wallet_failed_headline else R.string.could_not_check_headline,
+            ),
             color = TextPrimary,
             style = TypeRamp.title,
         )
         Spacer(Modifier.height(Space.md))
         Text(
-            stringResource(R.string.could_not_check_body),
+            stringResource(
+                if (walletFailed) R.string.wallet_failed_body else R.string.could_not_check_body,
+            ),
             color = TextSecondary,
             style = TypeRamp.body,
         )

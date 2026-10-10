@@ -41,9 +41,11 @@ import com.liqor.service.WatchService
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import com.solana.mobilewalletadapter.clientlib.ConnectionIdentity
 import com.solana.mobilewalletadapter.clientlib.MobileWalletAdapter
+import com.solana.mobilewalletadapter.clientlib.Solana
 import com.solana.mobilewalletadapter.clientlib.TransactionResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 class MainActivity : ComponentActivity() {
     private lateinit var resultSender: ActivityResultSender
@@ -56,7 +58,9 @@ class MainActivity : ComponentActivity() {
                 iconUri = Uri.parse("favicon.ico"),
                 identityName = "Liqor",
             ),
-        )
+        ).apply {
+            blockchain = Solana.Mainnet
+        }
     }
     private var screen by mutableStateOf(AppScreen.Splash)
     private var forward by mutableStateOf(true)
@@ -65,6 +69,7 @@ class MainActivity : ComponentActivity() {
     private var reading by mutableStateOf<Reading>(Reading.CouldNotCheck)
     private var appMode by mutableStateOf(Prefs.MODE_NONE)
     private var walletAddress by mutableStateOf<String?>(null)
+    private var walletFailed by mutableStateOf(false)
     private var elapsedMs by mutableLongStateOf(0L)
     private var overlayStillOff by mutableStateOf(false)
     private var waitingForOverlay = false
@@ -141,9 +146,12 @@ class MainActivity : ComponentActivity() {
                                 sample = samplePosition.at(elapsedMs),
                                 onShowSample = ::startSampleMode,
                             )
-                            AppScreen.CouldNotCheck -> CouldNotCheckScreen {
-                                if (walletAddress == null) connectWallet() else refreshPositions()
-                            }
+                            AppScreen.CouldNotCheck -> CouldNotCheckScreen(
+                                walletFailed = walletFailed,
+                                onTryAgain = {
+                                    if (walletFailed) connectWallet() else refreshPositions()
+                                },
+                            )
                             AppScreen.OverlayPermission -> OverlayPermissionScreen(
                                 onOpenSettings = ::openOverlaySettings,
                                 onOpenAppInfo = ::openAppInfo,
@@ -188,12 +196,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun connectWallet() {
+        walletFailed = false
         navigate(AppScreen.Loading)
         lifecycleScope.launch {
-            val result = runCatching { adapter.connect(resultSender) }.getOrNull()
+            val result = withTimeoutOrNull(WALLET_CONNECT_TIMEOUT_MS) {
+                runCatching { adapter.connect(resultSender) }.getOrNull()
+            }
             val success = result as? TransactionResult.Success<*>
             val publicKey = success?.authResult?.publicKey
             if (publicKey == null || publicKey.isEmpty()) {
+                walletFailed = true
                 navigate(AppScreen.CouldNotCheck)
                 return@launch
             }
@@ -206,6 +218,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun refreshPositions(showLoading: Boolean = true) {
+        walletFailed = false
         val address = walletAddress ?: return navigateRoot(AppScreen.FirstLaunch, false)
         if (showLoading && screen != AppScreen.Loading) navigate(AppScreen.Loading)
         lifecycleScope.launch {
@@ -305,5 +318,9 @@ class MainActivity : ComponentActivity() {
     private fun refreshReducedMotion() {
         reducedMotion =
             Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    }
+
+    private companion object {
+        const val WALLET_CONNECT_TIMEOUT_MS = 60_000L
     }
 }

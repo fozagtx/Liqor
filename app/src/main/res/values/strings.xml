@@ -82,6 +82,8 @@
     <string name="looking_for_positions">Looking for open positions</string>
     <string name="could_not_check_headline">Couldn\'t check. Trying again.</string>
     <string name="could_not_check_body">Liqor couldn\'t read Solana or Jupiter just now. Check your connection and try again.</string>
+    <string name="wallet_failed_headline">Phantom didn\'t connect.</string>
+    <string name="wallet_failed_body">Approve Liqor in your wallet, then come back here. Tap Try again to reopen it.</string>
     <string name="try_again">Try again</string>
     <string name="open_app_info">Open App info</string>
     <string name="disconnect">Disconnect</string>
