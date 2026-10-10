@@ -29,6 +29,7 @@ The phone screenshots are from a live run against mainnet positions. The bubble 
 - **Alerts.** One vibration and one notification when a position moves to a worse state and holds it for 20 seconds. An ongoing notification always carries the sentence.
 - **Read-only.** Mobile Wallet Adapter `connect()` reads your public address. The app never signs.
 - **Sample mode.** With no open position you get a SAMPLE card and bubble that never alert.
+- **Jupiter Perps Beta.** Liqor also watches every open market reported by GUM, including JUP, HYPE, ZEC, SPCX, SNDK and SKHYNIX. Beta accounts and positions are read from GUM's public JTX API.
 
 ## Accuracy
 
@@ -42,12 +43,12 @@ Liquidation prices from the Worker against Jupiter's own, on live mainnet positi
 | BTC `BTeM8V` | short | 83,538.67 | 83,538.6664 |
 | SOL `9hGGxa` | short | 111.28 | 111.2778 |
 
-The largest gap is 0.006%. To compare any wallet against `perps-api.jup.ag`, run `npm run check -- <worker url> <wallet>` in `worker/`.
+The largest JLP gap is 0.006%. To compare any wallet against Jupiter Perps and GUM, run `npm run check -- <worker url> <wallet>` in `worker/`.
 
 ## How it works
 
-- `app/` Kotlin and Jetpack Compose, Android 13 and up, targets Android 16. A `specialUse` foreground service owns the bubble and panel overlay windows and polls the Worker every 5 to 60 seconds. The phone re-checks every answer (liquidation on the right side of entry, distance recomputed, a rough estimate within 5%) and shows "–" on any doubt.
-- `worker/` Cloudflare Worker in TypeScript. One RPC call reads the Jupiter Perps pool, its custodies, the `dovesAg` price feeds and the wallet's position accounts. It computes liquidation prices with close fee, price impact and borrow fee in bigint maths, caches each wallet for 5 seconds and stores nothing.
+- `app/` Kotlin and Jetpack Compose, Android 13 and up, targets Android 16. A `specialUse` foreground service owns the bubble and panel overlay windows and polls the Worker every 5 to 60 seconds. The phone re-checks each JLP answer with a rough estimate within 5%. Beta answers use the Worker-verified liquidation price. The app recomputes distance and shows "–" on any doubt.
+- `worker/` Cloudflare Worker in TypeScript. It reads Jupiter Perps pool, custody, price-feed and wallet account data over Solana RPC, and reads Beta markets and trading accounts from GUM's public JTX API. Both sources run together, and a failed source fails the check. It caches each wallet for 5 seconds and stores nothing.
 
 ## Run it
 

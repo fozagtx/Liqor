@@ -78,20 +78,23 @@ fun validate(position: PositionDto): Watched? {
     )
     if (pricesAndValues.any { !it.isFinite() || it <= 0.0 }) return null
 
+    val isBeta = position.protocol == "jupiter-beta"
     val isLong = position.side == "long"
     if (!isLong && position.side != "short") return null
-    if (isLong && position.liquidationPrice >= position.entryPrice) return null
-    if (!isLong && position.liquidationPrice <= position.entryPrice) return null
+    if (!isBeta && isLong && position.liquidationPrice >= position.entryPrice) return null
+    if (!isBeta && !isLong && position.liquidationPrice <= position.entryPrice) return null
 
-    val collateralRatio = position.collateralUsd / position.sizeUsd
-    val roughLiquidation = if (isLong) {
-        position.entryPrice * (1.0 - collateralRatio)
-    } else {
-        position.entryPrice * (1.0 + collateralRatio)
-    }
-    if (!roughLiquidation.isFinite()) return null
-    if (abs(roughLiquidation - position.liquidationPrice) / position.liquidationPrice > 0.05) {
-        return null
+    if (!isBeta) {
+        val collateralRatio = position.collateralUsd / position.sizeUsd
+        val roughLiquidation = if (isLong) {
+            position.entryPrice * (1.0 - collateralRatio)
+        } else {
+            position.entryPrice * (1.0 + collateralRatio)
+        }
+        if (!roughLiquidation.isFinite()) return null
+        if (abs(roughLiquidation - position.liquidationPrice) / position.liquidationPrice > 0.05) {
+            return null
+        }
     }
 
     val distance = if (isLong) {
@@ -99,13 +102,18 @@ fun validate(position: PositionDto): Watched? {
     } else {
         (position.liquidationPrice - position.oraclePrice) / position.oraclePrice
     }.coerceAtLeast(0.0)
-    val travelled = if (isLong) {
-        (position.entryPrice - position.oraclePrice) /
-            (position.entryPrice - position.liquidationPrice)
+    val liquidationSpan = if (isLong) {
+        position.entryPrice - position.liquidationPrice
     } else {
-        (position.oraclePrice - position.entryPrice) /
-            (position.liquidationPrice - position.entryPrice)
-    }.coerceIn(0.0, 1.0)
+        position.liquidationPrice - position.entryPrice
+    }
+    val travelled = if (isBeta && liquidationSpan <= 0.0) {
+        1.0
+    } else if (isLong) {
+        ((position.entryPrice - position.oraclePrice) / liquidationSpan).coerceIn(0.0, 1.0)
+    } else {
+        ((position.oraclePrice - position.entryPrice) / liquidationSpan).coerceIn(0.0, 1.0)
+    }
 
     val normalizedTravelled = when {
         abs(travelled - 0.5) < 1e-12 -> 0.5

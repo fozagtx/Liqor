@@ -243,7 +243,7 @@ export function liquidation(p: Position, custody: Custody, collateral: Custody, 
 }
 
 export interface PositionOut {
-  protocol: "jupiter-perps";
+  protocol: "jupiter-perps" | "jupiter-beta";
   address: string;
   asset: string;
   side: Side;

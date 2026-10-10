@@ -1,11 +1,21 @@
 package com.liqor.ui
 
+import com.liqor.domain.PositionDto
 import com.liqor.domain.PositionsResponse
 import com.liqor.domain.Reading
+import com.liqor.domain.Watched
 import com.liqor.domain.positionJson
 import com.liqor.domain.read
+import com.liqor.domain.validate
 import java.time.Instant
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
+
+@Serializable
+private data class BetaWorkerCapture(
+    val capturedAt: String,
+    val positions: List<PositionDto>,
+)
 
 internal object WorkerSnapshotData {
     const val walletAddress = "CYEd…JcF"
@@ -19,9 +29,28 @@ internal object WorkerSnapshotData {
         }
     }
 
+    private val betaCapture: BetaWorkerCapture by lazy {
+        val stream = requireNotNull(
+            javaClass.getResourceAsStream("/live-beta-worker.json"),
+        )
+        stream.bufferedReader().use {
+            positionJson.decodeFromString<BetaWorkerCapture>(it.readText())
+        }
+    }
+
     val all: Reading.Live by lazy {
         val now = Instant.parse(response.serverTime).plusSeconds(12)
         requireNotNull(read(response, now) as? Reading.Live)
+    }
+
+    val beta: Reading.Live by lazy {
+        val watched = betaCapture.positions.map { requireNotNull(validate(it)) }
+        Reading.Live(
+            watched = watched.sortedWith(
+                compareByDescending<Watched> { it.level.ordinal }.thenBy { it.distance },
+            ),
+            serverTime = Instant.parse(betaCapture.capturedAt),
+        )
     }
 
     val walletPositions: Reading.Live by lazy {

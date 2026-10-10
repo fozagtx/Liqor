@@ -1,6 +1,7 @@
 package com.liqor.domain
 
 import java.time.Instant
+import kotlin.math.abs
 import kotlinx.serialization.decodeFromString
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -43,6 +44,32 @@ class DomainTest {
 
         assertNull(validate(wrongSide))
         assertNull(validate(mismatched))
+    }
+
+    @Test
+    fun betaPositionDoesNotRequireRoughCollateralEstimateToMatch() {
+        val long = fixture.positions.first { it.side == "long" }
+        val position = long.copy(
+            protocol = "jupiter-beta",
+            collateralUsd = long.sizeUsd * 0.01,
+        )
+        val roughLiquidation = position.entryPrice * (1.0 - position.collateralUsd / position.sizeUsd)
+
+        assertTrue(abs(roughLiquidation - position.liquidationPrice) / position.liquidationPrice > 0.05)
+        assertNotNull(validate(position))
+    }
+
+    @Test
+    fun betaWrongSideLiquidationIsDanger() {
+        val long = fixture.positions.first { it.side == "long" }
+        val position = long.copy(
+            protocol = "jupiter-beta",
+            liquidationPrice = long.entryPrice + 1.0,
+        )
+
+        val watched = requireNotNull(validate(position))
+        assertEquals(1.0, watched.travelled, 0.0)
+        assertEquals(Level.Danger, watched.level)
     }
 
     @Test

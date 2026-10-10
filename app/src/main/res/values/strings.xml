@@ -32,6 +32,7 @@
     <string name="positions_open_count">%1$d OPEN POSITIONS · JUPITER PERPS</string>
     <string name="position_name">%1$s %2$s</string>
     <string name="position_details">%1$dx · %2$s</string>
+    <string name="position_details_beta">%1$dx · Beta · %2$s</string>
     <string name="turn_on_bubble">Turn on the bubble</string>
     <string name="permissions_caption">Two quick permissions, then it runs by itself</string>
     <string name="no_positions_headline">No open positions. This is what you’ll see.</string>

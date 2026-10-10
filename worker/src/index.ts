@@ -2,9 +2,10 @@ import bs58 from "bs58";
 import {
   CODE_VERSION, HELIUS_RPC_URL, JLP_POOL, PERPS_PROGRAM, POOL_META_CACHE_MS, PUBLIC_RPC_URL, WALLET_CACHE_MS,
 } from "./config";
+import { gumPositions } from "./gum";
 import {
-  type Custody, decodeAgPrice, decodeCustody, decodePoolCustodies, decodePosition, isPosition, liquidation,
-  positionCandidates, toOutput,
+  type Custody, type PositionOut, decodeAgPrice, decodeCustody, decodePoolCustodies, decodePosition, isPosition,
+  liquidation, positionCandidates, toOutput,
 } from "./jupiter";
 
 export interface Env { HELIUS_API_KEY?: string }
@@ -49,7 +50,7 @@ async function loadPoolMeta(rpc: string) {
   return poolMeta;
 }
 
-async function positionsFor(rpc: string, wallet: string) {
+async function jupiterPositionsFor(rpc: string, wallet: string) {
   const meta = await loadPoolMeta(rpc);
   const keys = meta.custodies.map((c) => c.address);
   const n = keys.length;
@@ -79,7 +80,20 @@ async function positionsFor(rpc: string, wallet: string) {
     if (!custody || !collateral || !price) throw new Error("unknown custody");
     return [toOutput(p, custody, liquidation(p, custody, collateral, now), price)];
   });
-  return { slot, serverTime: new Date().toISOString(), codeVersion: CODE_VERSION, positions };
+  return { slot, positions };
+}
+
+async function positionsFor(rpc: string, wallet: string) {
+  const [jupiter, beta] = await Promise.all([
+    jupiterPositionsFor(rpc, wallet),
+    gumPositions(wallet),
+  ]);
+  return {
+    slot: jupiter.slot,
+    serverTime: new Date().toISOString(),
+    codeVersion: CODE_VERSION,
+    positions: [...jupiter.positions, ...beta],
+  };
 }
 
 const json = (status: number, body: unknown) =>

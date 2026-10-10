@@ -1,0 +1,37 @@
+{
+  "capturedAt": "2026-10-10T12:48:00.213Z",
+  "positions": [
+    {
+      "protocol": "jupiter-beta",
+      "address": "7riuntewksgpTHejZNppaE6dikciUnDShjaMiSApETfM:ZEC",
+      "asset": "ZEC",
+      "side": "long",
+      "entryPrice": 1207.0725201612906,
+      "sizeUsd": 5470.770384,
+      "collateralUsd": 1064.164635,
+      "closeFeeUsd": 1.9147696344,
+      "borrowFeeUsd": 0,
+      "oraclePrice": 1225.531,
+      "priceTime": 1791636479,
+      "priceSource": "protocol",
+      "liquidationPrice": 1002.02332544807,
+      "link": "https://jup.ag/perps"
+    },
+    {
+      "protocol": "jupiter-beta",
+      "address": "EuDtAEyUa8LExB7iZP8YEAmN4kwoPACft9VaFwqKyCz8:HYPE",
+      "asset": "HYPE",
+      "side": "long",
+      "entryPrice": 84.34555652173914,
+      "sizeUsd": 193.72716,
+      "collateralUsd": 10.071945,
+      "closeFeeUsd": 0.067804506,
+      "borrowFeeUsd": 0,
+      "oraclePrice": 84.2292,
+      "priceTime": 1791636479,
+      "priceSource": "protocol",
+      "liquidationPrice": 82.71309557831057,
+      "link": "https://jup.ag/perps"
+    }
+  ]
+}

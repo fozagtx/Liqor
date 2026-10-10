@@ -14,16 +14,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,6 +37,7 @@ import com.liqor.ui.theme.Raised
 import com.liqor.ui.theme.Safe
 import com.liqor.ui.theme.Stale
 import com.liqor.ui.theme.TextPrimary
+import kotlin.math.roundToInt
 
 @Composable
 fun TrainLine(
@@ -59,14 +56,9 @@ fun TrainLine(
     }
     val nowColor = if (stale) Stale else TextPrimary
     val density = LocalDensity.current
-    var labelWidth by remember { mutableIntStateOf(0) }
     BoxWithConstraints(modifier.fillMaxWidth().height(66.dp)) {
         val widthPx = with(density) { maxWidth.toPx() }
         val markerX = widthPx * travelled.coerceIn(0f, 1f)
-        val labelX = (markerX - labelWidth / 2f).coerceIn(
-            0f,
-            (widthPx - labelWidth).coerceAtLeast(0f),
-        )
         Canvas(
             Modifier
                 .fillMaxWidth()
@@ -96,8 +88,16 @@ fun TrainLine(
         Text(
             text = stringResource(R.string.train_now_price, usd(now)),
             modifier = Modifier
-                .onSizeChanged { labelWidth = it.width }
-                .offset { IntOffset(labelX.toInt(), 0) }
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    val x = (markerX - placeable.width / 2f).coerceIn(
+                        0f,
+                        (widthPx - placeable.width).coerceAtLeast(0f),
+                    )
+                    layout(placeable.width, placeable.height) {
+                        placeable.place(x.roundToInt(), 0)
+                    }
+                }
                 .clip(CircleShape)
                 .background(TextPrimary)
                 .padding(horizontal = 8.dp, vertical = 3.dp),

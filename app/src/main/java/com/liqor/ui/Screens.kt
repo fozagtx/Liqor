@@ -544,6 +544,12 @@ private fun FeatureRow(icon: Int, text: String, modifier: Modifier = Modifier) {
 fun PositionRow(watched: Watched, modifier: Modifier = Modifier, stale: Boolean = false) {
     val position = watched.position
     val leverage = (position.sizeUsd / position.collateralUsd).roundToInt().coerceAtLeast(1)
+    val level = stringResource(watched.level.stringId())
+    val details = if (position.protocol == "jupiter-beta") {
+        stringResource(R.string.position_details_beta, leverage, level)
+    } else {
+        stringResource(R.string.position_details, leverage, level)
+    }
     Row(
         modifier = modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -564,7 +570,7 @@ fun PositionRow(watched: Watched, modifier: Modifier = Modifier, stale: Boolean 
                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
             )
             Text(
-                stringResource(R.string.position_details, leverage, stringResource(watched.level.stringId())),
+                details,
                 color = TextSecondary,
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
             )

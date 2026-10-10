@@ -1,7 +1,8 @@
-export const CODE_VERSION = "1.0.0";
+export const CODE_VERSION = "1.1.0";
 
 export const PUBLIC_RPC_URL = "https://api.mainnet-beta.solana.com";
 export const HELIUS_RPC_URL = "https://mainnet.helius-rpc.com/?api-key=";
+export const GUM_API_URL = "https://gum-api.jup.net/jtx/mainnet-beta";
 
 export const PERPS_PROGRAM = "PERPHjGBqRHArX4DySjwM6UJHiR3sWAatqfdBS2qQJu";
 export const JLP_POOL = "5BUwFW4nRbftYTDMbgxykoFWqWHPzahFSNAaaaJtVKsq";

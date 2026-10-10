@@ -19,6 +19,10 @@ class PanelSnapshotTest {
         capturePanel("panel_two", pair, Freshness.Fresh, 12)
 
     @Test
+    fun betaPositionShowsVenue() =
+        capturePanel("panel_beta_position", WorkerSnapshotData.beta, Freshness.Fresh, 12)
+
+    @Test
     fun fiveRealPositionsShowsTwoMore() =
         capturePanel("panel_five_positions", WorkerSnapshotData.all, Freshness.Fresh, 12)
 
