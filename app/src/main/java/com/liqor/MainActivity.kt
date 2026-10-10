@@ -1,0 +1,255 @@
+package com.liqor
+
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.lifecycleScope
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.liqor.data.Prefs
+import com.liqor.data.WorkerClient
+import com.liqor.domain.Reading
+import com.liqor.domain.samplePosition
+import com.liqor.ui.CouldNotCheckScreen
+import com.liqor.ui.FirstLaunchScreen
+import com.liqor.ui.HomeScreen
+import com.liqor.ui.LoadingScreen
+import com.liqor.ui.NoPositionsScreen
+import com.liqor.ui.NotificationPermissionScreen
+import com.liqor.ui.OverlayPermissionScreen
+import com.liqor.ui.PositionsFoundScreen
+import com.liqor.ui.SplashScreen
+import com.liqor.ui.theme.LiqorTheme
+import com.liqor.wallet.Base58
+import com.liqor.service.WatchService
+import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
+import com.solana.mobilewalletadapter.clientlib.ConnectionIdentity
+import com.solana.mobilewalletadapter.clientlib.MobileWalletAdapter
+import com.solana.mobilewalletadapter.clientlib.TransactionResult
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+private enum class AppScreen {
+    Splash,
+    FirstLaunch,
+    Loading,
+    PositionsFound,
+    NoPositions,
+    CouldNotCheck,
+    OverlayPermission,
+    NotificationPermission,
+    Home,
+}
+
+class MainActivity : ComponentActivity() {
+    private lateinit var resultSender: ActivityResultSender
+    private lateinit var prefs: Prefs
+    private val worker = WorkerClient()
+    private val adapter by lazy {
+        MobileWalletAdapter(
+            ConnectionIdentity(
+                identityUri = Uri.parse("https://github.com/fozagtx/Liqor"),
+                iconUri = Uri.parse("favicon.ico"),
+                identityName = "Liqor",
+            ),
+        )
+    }
+    private var screen by mutableStateOf(AppScreen.Splash)
+    private var reading by mutableStateOf<Reading>(Reading.CouldNotCheck)
+    private var appMode by mutableStateOf(Prefs.MODE_NONE)
+    private var walletAddress by mutableStateOf<String?>(null)
+    private var elapsedMs by mutableLongStateOf(0L)
+    private var waitingForOverlay = false
+    private val notificationPermissionRequest =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            startServiceAndShowHome()
+        }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        resultSender = ActivityResultSender(this)
+        prefs = Prefs(this)
+        appMode = prefs.mode
+        walletAddress = prefs.walletAddress
+        setContent {
+            LiqorTheme {
+                LaunchedEffect(Unit) {
+                    delay(800)
+                    if (appMode == Prefs.MODE_NONE) {
+                        screen = AppScreen.FirstLaunch
+                    } else {
+                        screen = AppScreen.Home
+                        if (appMode == Prefs.MODE_LIVE) refreshPositions(showLoading = false)
+                        if (Settings.canDrawOverlays(this@MainActivity)) startWatching()
+                    }
+                }
+                LaunchedEffect(screen, appMode) {
+                    if (screen == AppScreen.FirstLaunch || appMode == Prefs.MODE_SAMPLE) {
+                        val start = System.currentTimeMillis()
+                        while (true) {
+                            elapsedMs = System.currentTimeMillis() - start
+                            delay(200)
+                        }
+                    }
+                }
+                when (screen) {
+                    AppScreen.Splash -> SplashScreen()
+                    AppScreen.FirstLaunch -> FirstLaunchScreen(
+                        sample = samplePosition.at(elapsedMs),
+                        onConnect = ::connectWallet,
+                    )
+                    AppScreen.Loading -> LoadingScreen()
+                    AppScreen.PositionsFound -> {
+                        val live = reading as? Reading.Live
+                        if (live != null) {
+                            PositionsFoundScreen(live, onTurnOnBubble = ::beginOverlaySetup)
+                        } else {
+                            LoadingScreen()
+                        }
+                    }
+                    AppScreen.NoPositions -> NoPositionsScreen(
+                        sample = samplePosition.at(elapsedMs),
+                        onShowSample = ::startSampleMode,
+                    )
+                    AppScreen.CouldNotCheck -> CouldNotCheckScreen {
+                        if (walletAddress == null) connectWallet() else refreshPositions()
+                    }
+                    AppScreen.OverlayPermission -> OverlayPermissionScreen(
+                        onOpenSettings = ::openOverlaySettings,
+                        onOpenAppInfo = ::openAppInfo,
+                        onNotNow = { screen = AppScreen.Home },
+                    )
+                    AppScreen.NotificationPermission -> NotificationPermissionScreen(
+                        onAllow = ::requestNotificationPermission,
+                        onNotNow = ::startServiceAndShowHome,
+                    )
+                    AppScreen.Home -> HomeScreen(
+                        reading = reading,
+                        sample = samplePosition.at(elapsedMs),
+                        sampleMode = appMode == Prefs.MODE_SAMPLE,
+                        onRetry = ::refreshPositions,
+                        onDisconnect = ::disconnect,
+                    )
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (waitingForOverlay && Settings.canDrawOverlays(this)) {
+            waitingForOverlay = false
+            screen = AppScreen.NotificationPermission
+        }
+    }
+
+    private fun connectWallet() {
+        screen = AppScreen.Loading
+        lifecycleScope.launch {
+            val result = runCatching { adapter.connect(resultSender) }.getOrNull()
+            val success = result as? TransactionResult.Success<*>
+            val publicKey = success?.authResult?.publicKey
+            if (publicKey == null || publicKey.isEmpty()) {
+                screen = AppScreen.CouldNotCheck
+                return@launch
+            }
+            walletAddress = Base58.encode(publicKey)
+            prefs.walletAddress = walletAddress
+            prefs.mode = Prefs.MODE_LIVE
+            appMode = Prefs.MODE_LIVE
+            refreshPositions()
+        }
+    }
+
+    private fun refreshPositions(showLoading: Boolean = true) {
+        val address = walletAddress ?: return run { screen = AppScreen.FirstLaunch }
+        if (showLoading) screen = AppScreen.Loading
+        lifecycleScope.launch {
+            reading = worker.positions(address)
+            if (showLoading) {
+                screen = when (reading) {
+                    is Reading.Live -> AppScreen.PositionsFound
+                    Reading.NoPositions -> AppScreen.NoPositions
+                    Reading.CouldNotCheck -> AppScreen.CouldNotCheck
+                }
+            }
+        }
+    }
+
+    private fun startSampleMode() {
+        prefs.mode = Prefs.MODE_SAMPLE
+        prefs.walletAddress = null
+        appMode = Prefs.MODE_SAMPLE
+        beginOverlaySetup()
+    }
+
+    private fun beginOverlaySetup() {
+        screen = if (Settings.canDrawOverlays(this)) {
+            AppScreen.NotificationPermission
+        } else {
+            AppScreen.OverlayPermission
+        }
+    }
+
+    private fun openOverlaySettings() {
+        waitingForOverlay = true
+        startActivity(
+            Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName"),
+            ),
+        )
+    }
+
+    private fun openAppInfo() {
+        startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:$packageName"),
+            ),
+        )
+    }
+
+    private fun requestNotificationPermission() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            startServiceAndShowHome()
+        }
+    }
+
+    private fun startServiceAndShowHome() {
+        if (Settings.canDrawOverlays(this) && appMode != Prefs.MODE_NONE) {
+            startForegroundService(Intent(this, WatchService::class.java))
+        }
+        screen = AppScreen.Home
+    }
+
+    private fun startWatching() {
+        if (appMode != Prefs.MODE_NONE) {
+            startForegroundService(Intent(this, WatchService::class.java))
+        }
+    }
+
+    private fun disconnect() {
+        stopService(Intent(this, WatchService::class.java))
+        prefs.clear()
+        appMode = Prefs.MODE_NONE
+        walletAddress = null
+        reading = Reading.CouldNotCheck
+        screen = AppScreen.FirstLaunch
+    }
+}
