@@ -222,9 +222,15 @@ class MainActivity : ComponentActivity() {
         val address = walletAddress ?: return navigateRoot(AppScreen.FirstLaunch, false)
         if (showLoading && screen != AppScreen.Loading) navigate(AppScreen.Loading)
         lifecycleScope.launch {
-            reading = reader.positions(address)
+            var result = reader.positions(address)
+            repeat(READ_RETRIES) { attempt ->
+                if (result != Reading.CouldNotCheck) return@repeat
+                delay(READ_RETRY_DELAY_MS * (attempt + 1))
+                result = reader.positions(address)
+            }
+            reading = result
             if (showLoading) {
-                navigate(when (reading) {
+                navigate(when (result) {
                     is Reading.Live -> AppScreen.PositionsFound
                     Reading.NoPositions -> AppScreen.NoPositions
                     Reading.CouldNotCheck -> AppScreen.CouldNotCheck
@@ -322,5 +328,7 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val WALLET_CONNECT_TIMEOUT_MS = 60_000L
+        const val READ_RETRIES = 2
+        const val READ_RETRY_DELAY_MS = 1_500L
     }
 }
