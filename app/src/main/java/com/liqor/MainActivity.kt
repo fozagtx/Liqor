@@ -224,6 +224,14 @@ class MainActivity : ComponentActivity() {
             }
         } else if (overlaysAllowed && appMode != Prefs.MODE_NONE && prefs.watchingEnabled) {
             startWatching()
+        } else if (
+            !overlaysAllowed &&
+            appMode != Prefs.MODE_NONE &&
+            prefs.watchingEnabled &&
+            screen == AppScreen.Home
+        ) {
+            bubbleOn = false
+            homeOverlaySheetVisible = true
         } else {
             bubbleOn = false
         }

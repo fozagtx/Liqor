@@ -9,6 +9,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
+import android.graphics.Insets
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.net.Uri
@@ -49,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleRegistry
@@ -109,6 +112,7 @@ class WatchService : LifecycleService() {
     private var bubbleParams: WindowManager.LayoutParams? = null
     private var panelView: ComposeView? = null
     private var hideView: ComposeView? = null
+    private var hideParams: WindowManager.LayoutParams? = null
     private var panelVisible by mutableStateOf(false)
     private var sampleWatched by mutableStateOf(samplePosition.at(0))
 
@@ -161,6 +165,23 @@ class WatchService : LifecycleService() {
     }
 
     override fun onBind(intent: Intent): IBinder? = super.onBind(intent)
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        closePanel()
+        bubbleParams?.let { params ->
+            setBubbleStartPosition(params)
+            bubbleView?.let { view ->
+                runCatching { windowManager.updateViewLayout(view, params) }
+            }
+        }
+        hideParams?.let { params ->
+            params.y = dpToPixels(24) + safeInsets().bottom
+            hideView?.let { view ->
+                runCatching { windowManager.updateViewLayout(view, params) }
+            }
+        }
+    }
 
     override fun onDestroy() {
         runCatching { unregisterReceiver(screenReceiver) }
@@ -298,6 +319,7 @@ class WatchService : LifecycleService() {
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.LEFT
+            allowDisplayCutout()
             setBubbleStartPosition(this)
         }
         view.addOnLayoutChangeListener { changed, _, _, _, _, _, _, _, _ ->
@@ -310,18 +332,12 @@ class WatchService : LifecycleService() {
             )
             val params = bubbleParams
             if (bubbleView === changed && params != null && changed.height > 0) {
-                val bounds = windowManager.currentWindowMetrics.bounds
-                val margin = dpToPixels(12)
-                val insets = windowManager.currentWindowMetrics.windowInsets
-                    .getInsets(WindowInsets.Type.systemBars())
-                val contentHeight = changed.height - 2 * padding
-                val minY = insets.top + margin - padding
-                val maxY = (
-                    bounds.height() - insets.bottom - contentHeight - margin - padding
-                ).coerceAtLeast(minY)
-                val clampedY = params.y.coerceIn(minY, maxY)
-                if (clampedY != params.y) {
-                    params.y = clampedY
+                val contentHeight = (changed.height - 2 * padding).coerceAtLeast(diameter)
+                val bubbleBounds = bubbleBounds(contentHeight, left)
+                val clamped = bubbleBounds.clampResting(params.x, params.y)
+                if (clamped.x != params.x || clamped.y != params.y) {
+                    params.x = clamped.x
+                    params.y = clamped.y
                     runCatching { windowManager.updateViewLayout(changed, params) }
                 }
             }
@@ -353,8 +369,15 @@ class WatchService : LifecycleService() {
                     change.consume()
                     val view = bubbleView ?: return@detectDragGestures
                     val params = bubbleParams ?: return@detectDragGestures
-                    params.x += amount.x.toInt()
-                    params.y += amount.y.toInt()
+                    val clamped = bubbleBounds(
+                        contentHeight = bubbleContentHeightPx(view),
+                        circleLeft = bubbleCircleLeft(view),
+                    ).clampDrag(
+                        x = params.x + amount.x.toInt(),
+                        y = params.y + amount.y.toInt(),
+                    )
+                    params.x = clamped.x
+                    params.y = clamped.y
                     runCatching { windowManager.updateViewLayout(view, params) }
                 },
                 onDragEnd = { finishDrag() },
@@ -369,26 +392,22 @@ class WatchService : LifecycleService() {
             removeHideTarget()
             return
         }
-        val bounds = windowManager.currentWindowMetrics.bounds
+        val screenBounds = windowManager.currentWindowMetrics.bounds
         val density = resources.displayMetrics.density
-        val padding = bubbleShadowPaddingPx()
         val diameter = bubbleDiameterPx()
-        val contentWidth = (view.width - 2 * padding).takeIf { it > 0 } ?: diameter
-        val contentHeight = (view.height - 2 * padding).takeIf { it > 0 } ?: diameter
-        val circleLeft = padding + ((contentWidth - diameter).coerceAtLeast(0) / 2)
-        val margin = dpToPixels(12)
-        val insets = windowManager.currentWindowMetrics.windowInsets
-            .getInsets(WindowInsets.Type.systemBars())
-        val minY = insets.top + margin - padding
-        val maxY = (
-            bounds.height() - insets.bottom - contentHeight - margin - padding
-        ).coerceAtLeast(minY)
-        params.y = params.y.coerceIn(minY, maxY)
-        val centerX = params.x + circleLeft + diameter / 2
+        val insets = safeInsets()
+        val padding = bubbleShadowPaddingPx()
+        val contentHeight = bubbleContentHeightPx(view)
+        val bubbleBounds = bubbleBounds(contentHeight, bubbleCircleLeft(view))
+        val dragPosition = bubbleBounds.clampDrag(params.x, params.y)
+        params.x = dragPosition.x
+        params.y = dragPosition.y
+        val centerX = params.x + bubbleCircleLeft(view) + diameter / 2
         val centerY = params.y + padding + diameter / 2
-        val hideCenterY = bounds.height() - diameter
+        val hideCenterY = screenBounds.height() -
+            dpToPixels(24) - insets.bottom - dpToPixels(28)
         if (
-            kotlin.math.abs(centerX - bounds.width() / 2) < 64 * density &&
+            kotlin.math.abs(centerX - screenBounds.width() / 2) < 64 * density &&
             centerY > hideCenterY - 64 * density
         ) {
             prefs.hidden = true
@@ -396,16 +415,15 @@ class WatchService : LifecycleService() {
             removeHideTarget()
             return
         }
-        val right = centerX >= bounds.width() / 2
-        val targetX = if (right) {
-            bounds.width() - margin - circleLeft - diameter
-        } else {
-            margin - circleLeft
-        }
-        animateToEdge(params, targetX, params.y)
+        val right = centerX >= screenBounds.width() / 2
+        val restingY = params.y.coerceIn(bubbleBounds.minY, bubbleBounds.maxY)
+        val targetX = if (right) bubbleBounds.maxX else bubbleBounds.minX
+        animateToEdge(params, targetX, restingY)
         prefs.bubbleSide = if (right) Prefs.SIDE_RIGHT else Prefs.SIDE_LEFT
-        prefs.bubbleYFraction = ((params.y - minY).toFloat() / (maxY - minY).coerceAtLeast(1))
-            .coerceIn(0f, 1f)
+        prefs.bubbleYFraction = (
+            (restingY - bubbleBounds.minY).toFloat() /
+                (bubbleBounds.maxY - bubbleBounds.minY).coerceAtLeast(1)
+            ).coerceIn(0f, 1f)
         removeHideTarget()
     }
 
@@ -429,29 +447,63 @@ class WatchService : LifecycleService() {
     }
 
     private fun setBubbleStartPosition(params: WindowManager.LayoutParams) {
-        val bounds = windowManager.currentWindowMetrics.bounds
         val padding = bubbleShadowPaddingPx()
         val diameter = bubbleDiameterPx()
-        val margin = dpToPixels(12)
+        val contentHeight = diameter + bubbleTagHeightPx()
+        val bounds = bubbleBounds(contentHeight, padding)
+        params.x = if (prefs.bubbleSide == Prefs.SIDE_LEFT) bounds.minX else bounds.maxX
+        params.y = bounds.minY + ((bounds.maxY - bounds.minY) * prefs.bubbleYFraction).toInt()
+    }
+
+    private fun bubbleTagHeightPx(): Int = when {
+        bubbleUi.state == com.liqor.ui.BubbleState.Sample ->
+            dpToPixels((16f * resources.configuration.fontScale + 8f).roundToInt())
+        bubbleUi.asset != null && bubbleUi.side != null -> dpToPixels(20)
+        else -> 0
+    }
+
+    private fun bubbleContentHeightPx(view: View? = bubbleView): Int {
+        val padding = bubbleShadowPaddingPx()
+        val measuredHeight = (view?.height ?: 0) - 2 * padding
+        return measuredHeight.takeIf { it > 0 } ?: (bubbleDiameterPx() + bubbleTagHeightPx())
+    }
+
+    private fun bubbleCircleLeft(view: View?): Int {
+        val padding = bubbleShadowPaddingPx()
+        val diameter = bubbleDiameterPx()
+        val contentWidth = ((view?.width ?: 0) - 2 * padding).coerceAtLeast(0)
+        return padding + ((contentWidth - diameter).coerceAtLeast(0) / 2)
+    }
+
+    private fun bubbleBounds(contentHeight: Int, circleLeft: Int): OverlayBounds {
+        val screen = windowManager.currentWindowMetrics.bounds
+        val insets = safeInsets()
+        return OverlayBounds.calculate(
+            screenWidth = screen.width(),
+            screenHeight = screen.height(),
+            leftInset = insets.left,
+            topInset = insets.top,
+            rightInset = insets.right,
+            bottomInset = insets.bottom,
+            margin = dpToPixels(12),
+            shadowPadding = bubbleShadowPaddingPx(),
+            circleLeft = circleLeft,
+            diameter = bubbleDiameterPx(),
+            contentHeight = contentHeight,
+        )
+    }
+
+    private fun safeInsets(): Insets {
         val insets = windowManager.currentWindowMetrics.windowInsets
-            .getInsets(WindowInsets.Type.systemBars())
-        val tagHeight = when {
-            bubbleUi.state == com.liqor.ui.BubbleState.Sample ->
-                dpToPixels((16f * resources.configuration.fontScale + 8f).roundToInt())
-            bubbleUi.asset != null && bubbleUi.side != null -> dpToPixels(20)
-            else -> 0
-        }
-        val contentHeight = diameter + tagHeight
-        val minY = insets.top + margin - padding
-        val maxY = (
-            bounds.height() - insets.bottom - contentHeight - margin - padding
-        ).coerceAtLeast(minY)
-        params.x = if (prefs.bubbleSide == Prefs.SIDE_LEFT) {
-            margin - padding
-        } else {
-            bounds.width() - diameter - margin - padding
-        }
-        params.y = minY + ((maxY - minY) * prefs.bubbleYFraction).toInt()
+        return Insets.max(
+            insets.getInsetsIgnoringVisibility(WindowInsets.Type.systemBars()),
+            insets.getInsets(WindowInsets.Type.displayCutout()),
+        )
+    }
+
+    private fun WindowManager.LayoutParams.allowDisplayCutout() {
+        layoutInDisplayCutoutMode =
+            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
     }
 
     private fun dpToPixels(dp: Int) = (dp * resources.displayMetrics.density).roundToInt()
@@ -472,7 +524,8 @@ class WatchService : LifecycleService() {
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
-            y = (24 * resources.displayMetrics.density).toInt()
+            y = dpToPixels(24) + safeInsets().bottom
+            allowDisplayCutout()
         }
         view.setContent {
             com.liqor.ui.theme.LiqorTheme {
@@ -490,12 +543,16 @@ class WatchService : LifecycleService() {
                 }
             }
         }
-        runCatching { windowManager.addView(view, params) }.onSuccess { hideView = view }
+        runCatching { windowManager.addView(view, params) }.onSuccess {
+            hideView = view
+            hideParams = params
+        }
     }
 
     private fun removeHideTarget() {
         hideView?.let(::disposeView)
         hideView = null
+        hideParams = null
     }
 
     private fun removeBubble() {
@@ -513,6 +570,10 @@ class WatchService : LifecycleService() {
         panelAgeSeconds = ageSeconds()
         val owner = OverlayOwner()
         val view = createComposeView(owner)
+        val insets = safeInsets()
+        val density = resources.displayMetrics.density
+        val padding = bubbleShadowPaddingPx()
+        val bubbleBottomPx = (bubbleParams?.y ?: 0) + padding + bubbleContentHeightPx()
         view.setContent {
             com.liqor.ui.theme.LiqorTheme {
                 PanelOverlay(
@@ -522,7 +583,11 @@ class WatchService : LifecycleService() {
                     sample = prefs.mode == Prefs.MODE_SAMPLE,
                     visible = panelVisible,
                     side = prefs.bubbleSide,
-                    yFraction = prefs.bubbleYFraction,
+                    safeLeft = (insets.left / density).dp,
+                    safeTop = (insets.top / density).dp,
+                    safeRight = (insets.right / density).dp,
+                    safeBottom = (insets.bottom / density).dp,
+                    bubbleBottom = (bubbleBottomPx / density).dp,
                     onClose = ::closePanel,
                     onMore = {
                         closePanel()
@@ -549,7 +614,7 @@ class WatchService : LifecycleService() {
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT,
-        )
+        ).apply { allowDisplayCutout() }
         runCatching { windowManager.addView(view, params) }.onSuccess {
             panelView = view
             serviceScope.launch {
@@ -570,7 +635,11 @@ class WatchService : LifecycleService() {
         sample: Boolean,
         visible: Boolean,
         side: String,
-        yFraction: Float,
+        safeLeft: Dp,
+        safeTop: Dp,
+        safeRight: Dp,
+        safeBottom: Dp,
+        bubbleBottom: Dp,
         onClose: () -> Unit,
         onMore: () -> Unit,
         onOpenJupiter: () -> Unit,
@@ -585,17 +654,22 @@ class WatchService : LifecycleService() {
                     .fillMaxSize()
                     .clickable(onClick = onClose),
             )
-            val panelTop = (maxHeight * yFraction + 68.dp)
-                .coerceAtMost((maxHeight - 390.dp).coerceAtLeast(0.dp))
-            val availablePanelHeight = (maxHeight - panelTop - 16.dp).coerceAtLeast(0.dp)
+            val available = (maxHeight - safeTop - safeBottom - 24.dp).coerceAtLeast(0.dp)
+            val minPanelTop = safeTop + 12.dp
+            val maxPanelTop = (
+                maxHeight - safeBottom - 12.dp - minOf(390.dp, available)
+            ).coerceAtLeast(minPanelTop)
+            val panelTop = (bubbleBottom + 8.dp).coerceIn(minPanelTop, maxPanelTop)
+            val availablePanelHeight =
+                (maxHeight - panelTop - safeBottom - 12.dp).coerceAtLeast(0.dp)
             AnimatedVisibility(
                 visible = visible,
                 modifier = Modifier
                     .align(if (side == Prefs.SIDE_RIGHT) Alignment.TopEnd else Alignment.TopStart)
                     .padding(
                         top = panelTop,
-                        start = if (side == Prefs.SIDE_LEFT) 12.dp else 0.dp,
-                        end = if (side == Prefs.SIDE_RIGHT) 12.dp else 0.dp,
+                        start = if (side == Prefs.SIDE_LEFT) 12.dp + safeLeft else 0.dp,
+                        end = if (side == Prefs.SIDE_RIGHT) 12.dp + safeRight else 0.dp,
                     ),
                 enter = fadeIn(tween(350)) + slideInVertically(tween(350)) { it / 10 },
                 exit = fadeOut(tween(200)) + slideOutVertically(tween(200)) { it / 14 },

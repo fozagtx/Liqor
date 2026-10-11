@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -57,9 +57,6 @@ import com.liqor.ui.theme.TextPrimary
 import com.liqor.ui.theme.TextSecondary
 import com.liqor.ui.theme.TypeRamp
 import kotlin.math.roundToInt
-import kotlinx.coroutines.delay
-
-private const val PERMISSION_SHEET_DELAY_MS = 600L
 
 class PermissionSheetState internal constructor(
     val visible: Boolean,
@@ -72,32 +69,19 @@ fun rememberPermissionSheetState(
     reopenKey: Int = 0,
 ): PermissionSheetState {
     var visible by remember { mutableStateOf(sheetInitiallyOpen) }
-    var dismissed by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        if (!sheetInitiallyOpen) {
-            delay(PERMISSION_SHEET_DELAY_MS)
-            if (!dismissed) visible = true
-        }
-    }
     LaunchedEffect(sheetInitiallyOpen) {
         if (sheetInitiallyOpen) {
-            dismissed = false
             visible = true
         }
     }
     LaunchedEffect(reopenKey) {
         if (reopenKey > 0) {
-            dismissed = false
-            visible = false
-            delay(PERMISSION_SHEET_DELAY_MS)
-            if (!dismissed) visible = true
+            visible = true
         }
     }
 
     return PermissionSheetState(visible) {
         visible = false
-        dismissed = true
     }
 }
 
@@ -174,7 +158,9 @@ fun PermissionSheet(
                     modifier = Modifier
                         .fillMaxWidth()
                         .windowInsetsPadding(
-                            WindowInsets.navigationBars.only(WindowInsetsSides.Bottom),
+                            WindowInsets.safeDrawing.only(
+                                WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal,
+                            ),
                         )
                         .padding(
                             horizontal = Space.screenHorizontal,

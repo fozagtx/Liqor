@@ -490,7 +490,7 @@ fun OverlayPermissionScreen(
     onNotNow: () -> Unit,
     stillOff: Boolean = false,
     demoTimeMs: Long? = null,
-    sheetInitiallyOpen: Boolean = false,
+    sheetInitiallyOpen: Boolean = true,
     sheetReopenKey: Int = 0,
 ) {
     val sheetState = rememberPermissionSheetState(sheetInitiallyOpen, sheetReopenKey)
@@ -670,7 +670,7 @@ fun NotificationPermissionScreen(
     sample: Watched,
     onAllow: () -> Unit,
     onNotNow: () -> Unit,
-    sheetInitiallyOpen: Boolean = false,
+    sheetInitiallyOpen: Boolean = true,
 ) {
     val sheetState = rememberPermissionSheetState(sheetInitiallyOpen)
     Box(Modifier.fillMaxSize()) {
