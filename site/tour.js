@@ -1,4 +1,4 @@
-// The pinned Seeker shows the screens for the step in view, and moves to the next one every 2 seconds.
+// The pinned Seeker plays every screen, one every 2 seconds. Scrolling to a step jumps to its first screen.
 (() => {
   const steps = [...document.querySelectorAll('.step')]
   const stage = document.querySelector('.stage')
@@ -13,10 +13,8 @@
   const show = (img) => shots.forEach((s) => s.classList.toggle('is-on', s === img))
 
   const tick = () => {
-    const group = groups[active]
-    if (group.length < 2) return
-    shown = (shown + 1) % group.length
-    show(group[shown])
+    shown = (shown + 1) % shots.length
+    show(shots[shown])
   }
 
   const update = () => {
@@ -29,9 +27,9 @@
     })
     if (now === active) return
     active = now
-    shown = 0
+    shown = shots.indexOf(groups[now][0])
     steps.forEach((s, i) => s.classList.toggle('is-active', i === now))
-    show(groups[now][0])
+    show(shots[shown])
     clearInterval(timer)
     if (!still.matches) timer = setInterval(tick, 2000)
   }
