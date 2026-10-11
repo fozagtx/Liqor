@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+    # site-only changes ship through pages.yml; tag pushes build regardless
+    paths-ignore: ["site/**", ".github/workflows/pages.yml"]
   pull_request:
   workflow_dispatch:
 
