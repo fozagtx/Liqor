@@ -27,7 +27,7 @@ Open a leveraged Jupiter Perps trade, switch to X, Telegram or a game, and the m
   </tr>
 </table>
 
-<img src="screenshots/bubble-states.png" width="720" alt="Bubble states: safe, caution, danger, stale, unknown">
+<img src="screenshots/bubble-states-row.png" width="480" alt="Bubble states: safe, caution, danger, stale, unknown">
 
 The bubble and panel shots are from a live run against mainnet positions. The other screens and the bubble states are rendered from the app's snapshot tests.
 
