@@ -1,8 +1,14 @@
 package com.liqor.ui.components
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,7 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import com.liqor.R
 import com.liqor.ui.BubbleState
 import com.liqor.ui.BubbleUi
+import com.liqor.ui.LocalAnimatedScope
+import com.liqor.ui.LocalReducedMotion
 import com.liqor.ui.theme.Caution
 import com.liqor.ui.theme.Danger
 import com.liqor.ui.theme.Raised
@@ -49,65 +59,106 @@ import com.liqor.ui.theme.Safe
 import com.liqor.ui.theme.Stale
 import com.liqor.ui.theme.TextPrimary
 import com.liqor.ui.theme.TypeRamp
+import com.liqor.ui.theme.Motion
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+
+private data class BubbleTag(
+    val asset: String,
+    val text: String,
+    val background: Color,
+)
 
 @Composable
 fun Bubble(
     ui: BubbleUi,
     modifier: Modifier = Modifier,
-    showSampleTag: Boolean = true,
 ) {
-    val asset = ui.asset
-    val side = ui.side
+    val canRotate = ui.rotation.size > 1 &&
+        !LocalReducedMotion.current &&
+        LocalAnimatedScope.current != null
+    var rotationIndex by remember(ui.rotation) { mutableIntStateOf(0) }
+    LaunchedEffect(canRotate, ui.rotation) {
+        rotationIndex = 0
+        if (canRotate) {
+            while (true) {
+                delay(Motion.BubbleRotationInterval.toLong())
+                rotationIndex = (rotationIndex + 1) % ui.rotation.size
+            }
+        }
+    }
+    val displayUi = when {
+        ui.rotation.isEmpty() -> ui
+        canRotate -> ui.rotation[rotationIndex.coerceIn(0, ui.rotation.lastIndex)]
+        else -> ui.rotation.first()
+    }
+    val asset = displayUi.asset
+    val side = displayUi.side
     val tagText = when {
-        ui.state == BubbleState.Unknown || ui.state == BubbleState.Sample -> null
+        displayUi.state == BubbleState.Unknown || displayUi.state == BubbleState.Sample -> null
         asset == null || asset.isBlank() -> null
         side == "long" -> stringResource(R.string.bubble_tag_long, asset)
         side == "short" -> stringResource(R.string.bubble_tag_short, asset)
         else -> null
     }
     val bubbleDescription = when {
-        ui.state == BubbleState.Unknown ->
+        displayUi.state == BubbleState.Unknown ->
             stringResource(R.string.bubble_unknown_content_description)
-        ui.state == BubbleState.Sample && asset != null && side != null ->
+        displayUi.state == BubbleState.Sample && asset != null && side != null ->
             stringResource(
                 R.string.bubble_sample_content_description,
                 asset,
                 side,
-                ui.value,
+                displayUi.value,
             )
-        ui.state == BubbleState.Sample -> stringResource(R.string.bubble_sample_description)
-        ui.state == BubbleState.Stale && asset != null && side != null ->
+        displayUi.state == BubbleState.Sample -> stringResource(R.string.bubble_sample_description)
+        displayUi.state == BubbleState.Stale && asset != null && side != null ->
             stringResource(
                 R.string.bubble_stale_content_description,
                 asset,
                 side,
-                ui.value,
+                displayUi.value,
             )
-        ui.state == BubbleState.Stale ->
+        displayUi.state == BubbleState.Stale ->
             stringResource(R.string.bubble_unknown_content_description)
         asset != null && side != null -> stringResource(
             R.string.bubble_content_description,
             asset,
             side,
-            ui.value,
+            displayUi.value,
         )
         else -> stringResource(R.string.bubble_unknown_content_description)
     }
-    val color = when (ui.state) {
+    val color = when (displayUi.state) {
         BubbleState.Safe, BubbleState.Sample -> Safe
         BubbleState.Caution -> Caution
         BubbleState.Danger -> Danger
         BubbleState.Stale, BubbleState.Unknown -> Stale
     }
-    val disc = if (ui.state == BubbleState.Danger) Danger else Raised
-    val numberColor = if (ui.state == BubbleState.Danger) Raised else TextPrimary
-    val value = ui.value.take(4)
-    val animatedColor by animateColorAsState(color, tween(300), label = "bubble-ring")
+    val disc = if (displayUi.state == BubbleState.Danger) Danger else Raised
+    val numberColor = if (displayUi.state == BubbleState.Danger) Raised else TextPrimary
+    val value = displayUi.value.take(4)
+    val density = LocalDensity.current
+    val slidePixels = with(density) { Motion.BubblePositionSlide.roundToPx() }
+    val animatedColor by animateColorAsState(
+        color,
+        tween(Motion.BubblePositionChange),
+        label = "bubble-ring",
+    )
+    val tag = if (asset != null && tagText != null) {
+        BubbleTag(
+            asset = asset,
+            text = tagText,
+            background = if (displayUi.state == BubbleState.Stale) Stale else TextPrimary,
+        )
+    } else {
+        null
+    }
     val halo = remember { Animatable(0f) }
-    LaunchedEffect(ui.state, ui.animateDanger) {
+    val shouldAnimate = !LocalReducedMotion.current && LocalAnimatedScope.current != null
+    LaunchedEffect(displayUi.state, displayUi.animateDanger, shouldAnimate) {
         halo.snapTo(0f)
-        if (ui.state == BubbleState.Danger && ui.animateDanger) {
+        if (shouldAnimate && displayUi.state == BubbleState.Danger && displayUi.animateDanger) {
             repeat(3) {
                 halo.animateTo(1f, tween(1_200))
                 halo.animateTo(0f, tween(1_200))
@@ -141,7 +192,7 @@ fun Bubble(
                 contentAlignment = Alignment.Center,
             ) {
                 Gauge(
-                    cushion = ui.cushion,
+                    cushion = displayUi.cushion,
                     color = animatedColor,
                     diameter = 56.dp,
                     stroke = 2.dp,
@@ -156,27 +207,46 @@ fun Bubble(
                     CompositionLocalProvider(
                         LocalDensity provides Density(density.density, 1f),
                     ) {
-                        Text(
-                            text = value,
-                            color = numberColor,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontSize = 19.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                letterSpacing = if (value.contains('.')) 0.em else (-0.06).em,
-                            ),
-                            maxLines = 1,
-                        )
-                        if (ui.state != BubbleState.Unknown) {
+                        AnimatedContent(
+                            targetState = value,
+                            transitionSpec = {
+                                (
+                                    fadeIn(tween(Motion.BubblePositionChange, easing = Motion.SmoothOut)) +
+                                        slideInVertically(
+                                            tween(Motion.BubblePositionChange, easing = Motion.SmoothOut),
+                                        ) { slidePixels }
+                                    ) togetherWith (
+                                    fadeOut(tween(Motion.BubblePositionChange, easing = Motion.SmoothOut)) +
+                                        slideOutVertically(
+                                            tween(Motion.BubblePositionChange, easing = Motion.SmoothOut),
+                                        ) { -slidePixels }
+                                    )
+                            },
+                            contentAlignment = Alignment.Center,
+                            label = "bubble-value",
+                        ) { currentValue ->
+                            Text(
+                                text = currentValue,
+                                color = numberColor,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontSize = 19.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = if (currentValue.contains('.')) 0.em else (-0.06).em,
+                                ),
+                                maxLines = 1,
+                            )
+                        }
+                        if (displayUi.state != BubbleState.Unknown) {
                             Text(
                                 text = stringResource(R.string.percent_sign),
                                 color = numberColor,
-                        style = TypeRamp.label.copy(letterSpacing = (-0.04).em),
+                                style = TypeRamp.label.copy(letterSpacing = (-0.04).em),
                             )
                         }
                     }
                 }
             }
-            if (ui.state == BubbleState.Stale) {
+            if (displayUi.state == BubbleState.Stale) {
                 Box(
                     Modifier
                         .align(Alignment.BottomEnd)
@@ -195,43 +265,49 @@ fun Bubble(
                 }
             }
         }
-        if (ui.state == BubbleState.Sample && showSampleTag) {
-            Text(
-                text = stringResource(R.string.sample_tag),
-                modifier = Modifier
-                    .padding(top = 4.dp)
-                    .clip(CircleShape)
-                    .background(TextPrimary)
-                    .padding(horizontal = 6.dp, vertical = 2.dp),
-                color = Raised,
-                style = TypeRamp.label,
-                textAlign = TextAlign.Center,
-            )
-        } else if (tagText != null) {
-            val tagBackground = if (ui.state == BubbleState.Stale) Stale else TextPrimary
-            val density = LocalDensity.current
-            CompositionLocalProvider(
-                LocalDensity provides Density(density.density, 1f),
-            ) {
-                Row(
-                    modifier = Modifier
-                        .offset(y = (-4).dp)
-                        .widthIn(max = 76.dp)
-                        .clip(CircleShape)
-                        .background(tagBackground)
-                        .padding(start = 3.dp, end = 6.dp, top = 2.dp, bottom = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (asset != null) CoinLogo(asset, 12.dp)
-                    Text(
-                        text = tagText,
-                        color = Raised,
-                        style = TypeRamp.label,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+        AnimatedContent(
+            targetState = tag,
+            transitionSpec = {
+                (
+                    fadeIn(tween(Motion.BubblePositionChange, easing = Motion.SmoothOut)) +
+                        slideInVertically(
+                            tween(Motion.BubblePositionChange, easing = Motion.SmoothOut),
+                        ) { slidePixels }
+                    ) togetherWith (
+                    fadeOut(tween(Motion.BubblePositionChange, easing = Motion.SmoothOut)) +
+                        slideOutVertically(
+                            tween(Motion.BubblePositionChange, easing = Motion.SmoothOut),
+                        ) { -slidePixels }
                     )
+            },
+            contentAlignment = Alignment.Center,
+            label = "bubble-token",
+        ) { currentTag ->
+            if (currentTag != null) {
+                val density = LocalDensity.current
+                CompositionLocalProvider(
+                    LocalDensity provides Density(density.density, 1f),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .offset(y = (-4).dp)
+                            .widthIn(max = 76.dp)
+                            .clip(CircleShape)
+                            .background(currentTag.background)
+                            .padding(start = 3.dp, end = 6.dp, top = 2.dp, bottom = 2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CoinLogo(currentTag.asset, 12.dp)
+                        Text(
+                            text = currentTag.text,
+                            color = Raised,
+                            style = TypeRamp.label,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.liqor.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +19,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +38,8 @@ import com.liqor.domain.Watched
 import com.liqor.domain.distanceText
 import com.liqor.domain.sentence
 import com.liqor.domain.usd
+import com.liqor.ui.LocalAnimatedScope
+import com.liqor.ui.LocalReducedMotion
 import com.liqor.ui.theme.Caution
 import com.liqor.ui.theme.Danger
 import com.liqor.ui.theme.Ground
@@ -45,35 +51,60 @@ import com.liqor.ui.theme.TextPrimary
 import com.liqor.ui.theme.CardPadding
 import com.liqor.ui.theme.Elevation
 import com.liqor.ui.theme.IllustrationSize
+import com.liqor.ui.theme.Motion
 import com.liqor.ui.theme.Radius
 import com.liqor.ui.theme.Space
 import com.liqor.ui.theme.TypeRamp
+import kotlin.math.roundToInt
 
 @Composable
 fun TicketCard(
     watched: Watched,
     title: String,
-    isSample: Boolean = false,
+    animateSample: Boolean = false,
     stale: Boolean = false,
     closest: Boolean = false,
     panelContent: Boolean = false,
     perforated: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
-    val distance = distanceText(watched.distance)
+    val fullDistance = distanceText(watched.distance)
+    val reducedMotion = LocalReducedMotion.current
+    val animatedScope = LocalAnimatedScope.current
+    val shouldAnimateSample = animateSample && !reducedMotion && animatedScope != null
+    val sampleProgress = remember { Animatable(if (shouldAnimateSample) 0f else 1f) }
+    LaunchedEffect(shouldAnimateSample, animateSample) {
+        if (shouldAnimateSample) {
+            sampleProgress.snapTo(0f)
+            sampleProgress.animateTo(1f, tween(Motion.TicketCount, easing = Motion.SmoothOut))
+        } else {
+            sampleProgress.snapTo(1f)
+        }
+    }
+    val targetDistance = fullDistance.toFloatOrNull()
+    val distance = if (animateSample && targetDistance != null && sampleProgress.value < 1f) {
+        (targetDistance * sampleProgress.value).roundToInt().toString()
+    } else {
+        fullDistance
+    }
+    val travelled = watched.travelled.toFloat() *
+        (if (animateSample) sampleProgress.value else 1f)
     val ringColor = if (stale) Stale else when (watched.level) {
         com.liqor.domain.Level.Safe -> Safe
         com.liqor.domain.Level.Caution -> Caution
         com.liqor.domain.Level.Danger -> Danger
     }
+    val cardShape = RoundedCornerShape(Radius.lg)
     Surface(
         modifier = if (panelContent) {
             modifier.fillMaxWidth()
         } else {
-            modifier.fillMaxWidth().shadow(Elevation.card, RoundedCornerShape(Radius.lg), clip = false)
+            modifier.fillMaxWidth()
+                .shadow(Elevation.card, cardShape, clip = false)
+                .cardBorder(cardShape)
         },
         color = if (panelContent) Color.Transparent else Raised,
-        shape = if (panelContent) RoundedCornerShape(Space.none) else RoundedCornerShape(Radius.lg),
+        shape = if (panelContent) RoundedCornerShape(Space.none) else cardShape,
     ) {
         Column {
             Column(Modifier.padding(CardPadding.hero)) {
@@ -119,7 +150,7 @@ fun TicketCard(
                         }
                     }
                     Gauge(
-                        cushion = 1f - watched.travelled.toFloat(),
+                        cushion = 1f - travelled,
                         color = ringColor,
                         diameter = IllustrationSize.ticketGauge,
                         stroke = IllustrationSize.ticketGaugeStroke,
@@ -139,10 +170,6 @@ fun TicketCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (isSample) {
-                        Spacer(Modifier.weight(1f))
-                        SampleChip()
-                    }
                 }
             }
             if (perforated) {
@@ -183,7 +210,7 @@ fun TicketCard(
                 entry = watched.position.entryPrice,
                 now = watched.position.oraclePrice,
                 liq = watched.position.liquidationPrice,
-                travelled = watched.travelled.toFloat(),
+                travelled = travelled,
                 level = watched.level,
                 stale = stale,
                 modifier = Modifier.padding(horizontal = CardPadding.hero, vertical = Space.md),

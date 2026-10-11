@@ -51,10 +51,13 @@ fun Panel(
     modifier: Modifier = Modifier,
     maxHeight: Dp? = null,
 ) {
+    val panelShape = RoundedCornerShape(24.dp)
     Surface(
-        modifier = modifier.width(344.dp).then(maxHeight?.let { Modifier.heightIn(max = it) } ?: Modifier),
+        modifier = modifier.width(344.dp)
+            .then(maxHeight?.let { Modifier.heightIn(max = it) } ?: Modifier)
+            .cardBorder(panelShape),
         color = Raised,
-        shape = RoundedCornerShape(24.dp),
+        shape = panelShape,
         shadowElevation = 14.dp,
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
@@ -103,7 +106,6 @@ private fun LivePanelContent(
         TicketCard(
             watched = primary,
             title = stringResource(R.string.ticket_closest_to_liquidation),
-            isSample = sample,
             stale = stale,
             closest = true,
             panelContent = true,

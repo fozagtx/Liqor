@@ -31,6 +31,41 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = "w400dp-h890dp-xxhdpi")
 class BubbleSnapshotTest {
     @Test
+    fun bubbleRotationStartsWithFirstAffectedPositionWhenStatic() =
+        captureScreen("bubble_rotation") {
+            androidx.compose.foundation.layout.Box(
+                Modifier.fillMaxSize().background(Ground).padding(8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Bubble(
+                    BubbleUi(
+                        value = "2.4",
+                        state = BubbleState.Safe,
+                        cushion = 0.7f,
+                        asset = "SOL",
+                        side = "long",
+                        rotation = listOf(
+                            BubbleUi(
+                                value = "4.8",
+                                state = BubbleState.Caution,
+                                cushion = 0.4f,
+                                asset = "SOL",
+                                side = "long",
+                            ),
+                            BubbleUi(
+                                value = "8.2",
+                                state = BubbleState.Danger,
+                                cushion = 0.2f,
+                                asset = "BTC",
+                                side = "short",
+                            ),
+                        ),
+                    ),
+                )
+            }
+        }
+
+    @Test
     fun bubbleStates() = captureScreen("bubble_states") {
         val positions = WorkerSnapshotData.all.watched
         val btcShort = positions.first {
@@ -52,12 +87,6 @@ class BubbleSnapshotTest {
                 BubbleCaption(btcShort, BubbleState.Danger, R.string.level_danger, Modifier.weight(1f))
                 BubbleCaption(positions[1], BubbleState.Stale, R.string.stale_label, Modifier.weight(1f))
                 BubbleCaption("–", BubbleState.Unknown, R.string.bubble_state_unknown, Modifier.weight(1f))
-                BubbleCaption(
-                    com.liqor.domain.distanceText(com.liqor.domain.samplePosition.at(0).distance),
-                    BubbleState.Sample,
-                    R.string.sample_caption,
-                    Modifier.weight(1f),
-                )
             }
         }
     }

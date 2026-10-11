@@ -10,6 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -68,11 +69,16 @@ class MainActivity : ComponentActivity() {
     private var reducedMotion by mutableStateOf(false)
     private var reading by mutableStateOf<Reading>(Reading.CouldNotCheck)
     private var appMode by mutableStateOf(Prefs.MODE_NONE)
+    private var bubbleOn by mutableStateOf(false)
     private var walletAddress by mutableStateOf<String?>(null)
     private var walletFailed by mutableStateOf(false)
     private var elapsedMs by mutableLongStateOf(0L)
     private var overlayStillOff by mutableStateOf(false)
     private var waitingForOverlay = false
+    private var waitingForOverlayFromHome = false
+    private var homeOverlaySheetVisible by mutableStateOf(false)
+    private var overlaySheetReopenKey by mutableStateOf(0)
+    private var waitingForNotificationSettings = false
     private val notificationPermissionRequest =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
             startServiceAndShowHome()
@@ -84,6 +90,9 @@ class MainActivity : ComponentActivity() {
         resultSender = ActivityResultSender(this)
         prefs = Prefs(this)
         appMode = prefs.mode
+        bubbleOn = Settings.canDrawOverlays(this) &&
+            appMode != Prefs.MODE_NONE &&
+            prefs.watchingEnabled
         walletAddress = prefs.walletAddress
         refreshReducedMotion()
         setContent {
@@ -153,10 +162,11 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                             AppScreen.OverlayPermission -> OverlayPermissionScreen(
-                                onOpenSettings = ::openOverlaySettings,
+                                onOpenSettings = { openOverlaySettings() },
                                 onOpenAppInfo = ::openAppInfo,
                                 onNotNow = { navigateRoot(AppScreen.Home, true) },
                                 stillOff = overlayStillOff,
+                                sheetReopenKey = overlaySheetReopenKey,
                             )
                             AppScreen.BubbleOn -> BubbleOnScreen(
                                 onNext = { navigate(AppScreen.NotificationPermission) },
@@ -170,8 +180,13 @@ class MainActivity : ComponentActivity() {
                                 reading = reading,
                                 sample = samplePosition.at(elapsedMs),
                                 sampleMode = appMode == Prefs.MODE_SAMPLE,
+                                bubbleOn = bubbleOn,
+                                onBubbleChange = ::changeBubbleEnabled,
                                 onRetry = ::refreshPositions,
                                 onDisconnect = ::disconnect,
+                                overlaySheetVisible = homeOverlaySheetVisible,
+                                onOpenOverlaySettings = { openOverlaySettings(fromHome = true) },
+                                onDismissOverlaySheet = { homeOverlaySheetVisible = false },
                             )
                         }
                     }
@@ -183,15 +198,34 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         refreshReducedMotion()
-        if (waitingForOverlay) {
+        val overlaysAllowed = Settings.canDrawOverlays(this)
+        if (waitingForNotificationSettings) {
+            waitingForNotificationSettings = false
+            startServiceAndShowHome()
+        } else if (waitingForOverlay) {
+            val returningToHome = waitingForOverlayFromHome
             waitingForOverlay = false
-            if (Settings.canDrawOverlays(this)) {
+            waitingForOverlayFromHome = false
+            if (overlaysAllowed) {
                 overlayStillOff = false
                 startWatching()
-                navigate(AppScreen.BubbleOn)
+                if (returningToHome) {
+                    homeOverlaySheetVisible = false
+                } else {
+                    navigate(AppScreen.BubbleOn)
+                }
+            } else if (returningToHome) {
+                prefs.watchingEnabled = false
+                bubbleOn = false
+                homeOverlaySheetVisible = false
             } else if (screen == AppScreen.OverlayPermission) {
                 overlayStillOff = true
+                overlaySheetReopenKey += 1
             }
+        } else if (overlaysAllowed && appMode != Prefs.MODE_NONE && prefs.watchingEnabled) {
+            startWatching()
+        } else {
+            bubbleOn = false
         }
     }
 
@@ -248,15 +282,22 @@ class MainActivity : ComponentActivity() {
 
     private fun beginOverlaySetup() {
         overlayStillOff = false
-        navigate(if (Settings.canDrawOverlays(this)) {
-            AppScreen.BubbleOn
+        prefs.watchingEnabled = true
+        if (Settings.canDrawOverlays(this)) {
+            startWatching()
+            navigate(AppScreen.BubbleOn)
         } else {
-            AppScreen.OverlayPermission
-        })
+            navigate(AppScreen.OverlayPermission)
+        }
     }
 
-    private fun openOverlaySettings() {
+    private fun openOverlaySettings(fromHome: Boolean = false) {
         waitingForOverlay = true
+        waitingForOverlayFromHome = fromHome
+        if (fromHome) {
+            prefs.watchingEnabled = true
+            homeOverlaySheetVisible = false
+        }
         startActivity(
             Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -275,31 +316,73 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestNotificationPermission() {
-        if (android.os.Build.VERSION.SDK_INT >= 33 &&
-            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
-            android.content.pm.PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            val permissionGranted = checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+            if (permissionGranted) {
+                startServiceAndShowHome()
+            } else if (
+                !prefs.notificationAsked ||
+                shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)
+            ) {
+                prefs.notificationAsked = true
+                notificationPermissionRequest.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                openNotificationSettings()
+            }
+        } else if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            openNotificationSettings()
         } else {
             startServiceAndShowHome()
         }
     }
 
+    private fun openNotificationSettings() {
+        waitingForNotificationSettings = true
+        startActivity(
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName),
+        )
+    }
+
     private fun startServiceAndShowHome() {
-        if (Settings.canDrawOverlays(this) && appMode != Prefs.MODE_NONE) {
-            startForegroundService(Intent(this, WatchService::class.java))
-        }
+        startWatching()
         navigateRoot(AppScreen.Home, true)
     }
 
     private fun startWatching() {
-        if (appMode != Prefs.MODE_NONE) {
+        if (Settings.canDrawOverlays(this) &&
+            appMode != Prefs.MODE_NONE &&
+            prefs.watchingEnabled
+        ) {
             startForegroundService(Intent(this, WatchService::class.java))
+            bubbleOn = true
+        } else {
+            bubbleOn = false
         }
     }
 
-    private fun disconnect() {
+    private fun changeBubbleEnabled(enabled: Boolean) {
+        if (!enabled) {
+            prefs.watchingEnabled = false
+            stopWatching()
+        } else if (Settings.canDrawOverlays(this)) {
+            prefs.watchingEnabled = true
+            startWatching()
+        } else {
+            prefs.watchingEnabled = false
+            bubbleOn = false
+            homeOverlaySheetVisible = true
+        }
+    }
+
+    private fun stopWatching() {
         stopService(Intent(this, WatchService::class.java))
+        bubbleOn = false
+    }
+
+    private fun disconnect() {
+        stopWatching()
         prefs.clear()
         appMode = Prefs.MODE_NONE
         walletAddress = null

@@ -2,6 +2,7 @@ package com.liqor.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -30,9 +32,11 @@ import com.liqor.R
 import com.liqor.domain.Level
 import com.liqor.ui.theme.CautionText
 import com.liqor.ui.theme.CautionTint
+import com.liqor.ui.theme.CardBorder
 import com.liqor.ui.theme.DangerText
 import com.liqor.ui.theme.DangerTint
 import com.liqor.ui.theme.Raised
+import com.liqor.ui.theme.Hairline
 import com.liqor.ui.theme.SafeText
 import com.liqor.ui.theme.SafeTint
 import com.liqor.ui.theme.StaleText
@@ -45,6 +49,9 @@ import com.liqor.ui.theme.Radius
 import com.liqor.ui.theme.Space
 import com.liqor.ui.theme.TypeRamp
 
+fun Modifier.cardBorder(shape: Shape): Modifier =
+    border(IllustrationSize.cardBorder, CardBorder, shape)
+
 @Composable
 fun PillButton(
     text: String,
@@ -52,6 +59,7 @@ fun PillButton(
     modifier: Modifier = Modifier,
     height: Dp = ScreenSize.primaryButtonHeight,
     leadingGlyph: String? = null,
+    labelContent: (@Composable () -> Unit)? = null,
 ) {
     Surface(
         onClick = onClick,
@@ -72,11 +80,48 @@ fun PillButton(
                 )
                 Spacer(Modifier.size(Space.sm))
             }
-            Text(
-                text,
-                style = TypeRamp.button,
-                textAlign = TextAlign.Center,
-            )
+            if (labelContent != null) {
+                labelContent()
+            } else {
+                Text(
+                    text,
+                    style = TypeRamp.button,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SecondaryPillButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    height: Dp = ScreenSize.primaryButtonHeight,
+    labelContent: (@Composable () -> Unit)? = null,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth().height(height),
+        shape = RoundedCornerShape(Radius.pill),
+        color = Raised,
+        contentColor = TextPrimary,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = CardPadding.hero),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (labelContent != null) {
+                labelContent()
+            } else {
+                Text(
+                    text,
+                    style = TypeRamp.button,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }
@@ -122,34 +167,31 @@ fun StatusChip(
 }
 
 @Composable
-fun SampleChip(modifier: Modifier = Modifier) {
-    Text(
-        text = stringResource(R.string.sample_tag),
-        modifier = modifier
-            .clip(CircleShape)
-            .background(TextPrimary)
-            .padding(horizontal = Space.sm, vertical = Space.chipVertical),
-        color = Raised,
-        style = TypeRamp.label,
-    )
-}
-
-@Composable
-fun BrandMark(modifier: Modifier = Modifier) {
+fun BrandMark(
+    modifier: Modifier = Modifier,
+    size: Dp = IllustrationSize.brandMark,
+) {
     Box(
         modifier = modifier
-            .size(IllustrationSize.brandMark)
+            .size(size)
             .clip(CircleShape)
             .background(TextPrimary),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(Modifier.size(Space.lg.minus(Space.xs))) {
+        Canvas(Modifier.size(size)) {
+            val inset = this.size.minDimension * 0.2f
+            val strokeWidth = this.size.minDimension * 0.1f
             drawArc(
                 Color.White,
                 -30f,
                 300f,
                 false,
-                style = androidx.compose.ui.graphics.drawscope.Stroke(Space.xs.toPx() / 2, cap = StrokeCap.Round),
+                topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                size = androidx.compose.ui.geometry.Size(
+                    this.size.width - inset * 2,
+                    this.size.height - inset * 2,
+                ),
+                style = androidx.compose.ui.graphics.drawscope.Stroke(strokeWidth, cap = StrokeCap.Round),
             )
         }
     }

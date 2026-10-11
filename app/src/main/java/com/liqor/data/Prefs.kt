@@ -20,6 +20,18 @@ class Prefs(context: Context) {
             values.edit().putString(KEY_MODE, value).apply()
         }
 
+    var watchingEnabled: Boolean
+        get() = values.getBoolean(KEY_WATCHING_ENABLED, true)
+        set(value) {
+            values.edit().putBoolean(KEY_WATCHING_ENABLED, value).apply()
+        }
+
+    var notificationAsked: Boolean
+        get() = values.getBoolean(KEY_NOTIFICATION_ASKED, false)
+        set(value) {
+            values.edit().putBoolean(KEY_NOTIFICATION_ASKED, value).apply()
+        }
+
     var bubbleSide: String
         get() = values.getString(KEY_SIDE, SIDE_RIGHT) ?: SIDE_RIGHT
         set(value) {
@@ -59,6 +71,8 @@ class Prefs(context: Context) {
 
         private const val KEY_WALLET = "wallet"
         private const val KEY_MODE = "mode"
+        private const val KEY_WATCHING_ENABLED = "watching_enabled"
+        private const val KEY_NOTIFICATION_ASKED = "notification_asked"
         private const val KEY_SIDE = "bubble_side"
         private const val KEY_Y = "bubble_y"
         private const val KEY_HIDDEN = "bubble_hidden"

@@ -137,7 +137,7 @@ class WatchService : LifecycleService() {
             },
             Context.RECEIVER_NOT_EXPORTED,
         )
-        if (prefs.mode == Prefs.MODE_NONE) {
+        if (prefs.mode == Prefs.MODE_NONE || !prefs.watchingEnabled) {
             stopSelf()
             return
         }
@@ -685,7 +685,7 @@ class WatchService : LifecycleService() {
     }
 
     private fun statusNotificationText(): String = when {
-            prefs.mode == Prefs.MODE_SAMPLE -> getString(R.string.status_sample)
+            prefs.mode == Prefs.MODE_SAMPLE -> getString(R.string.status_demo)
             reading == Reading.NoPositions -> getString(R.string.status_all_clear)
             reading == Reading.CouldNotCheck -> getString(R.string.status_could_not_check)
             reading is Reading.Live -> closestPosition((reading as Reading.Live))

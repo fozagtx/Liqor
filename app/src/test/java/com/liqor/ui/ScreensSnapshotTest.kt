@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.liqor.domain.Reading
 import com.liqor.domain.samplePosition
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,11 +44,57 @@ class ScreensSnapshotTest {
     }
 
     @Test
+    fun walletFailedScreen() = captureScreen("wallet_failed_screen") {
+        CouldNotCheckScreen(walletFailed = true, onTryAgain = {})
+    }
+
+    @Test
     fun homeLive() = captureScreen("home_live") {
         HomeScreen(
             reading = WorkerSnapshotData.walletPositions,
             sample = samplePosition.at(0),
             sampleMode = false,
+            bubbleOn = true,
+            onBubbleChange = {},
+            onRetry = {},
+            onDisconnect = {},
+        )
+    }
+
+    @Test
+    fun homeFivePositions() = captureScreen("home_five_positions") {
+        HomeScreen(
+            reading = WorkerSnapshotData.all,
+            sample = samplePosition.at(0),
+            sampleMode = false,
+            bubbleOn = true,
+            onBubbleChange = {},
+            onRetry = {},
+            onDisconnect = {},
+        )
+    }
+
+    @Test
+    fun homeBubbleOff() = captureScreen("home_bubble_off") {
+        HomeScreen(
+            reading = WorkerSnapshotData.walletPositions,
+            sample = samplePosition.at(0),
+            sampleMode = false,
+            bubbleOn = false,
+            onBubbleChange = {},
+            onRetry = {},
+            onDisconnect = {},
+        )
+    }
+
+    @Test
+    fun homeNoPositions() = captureScreen("home_no_positions") {
+        HomeScreen(
+            reading = Reading.NoPositions,
+            sample = samplePosition.at(0),
+            sampleMode = false,
+            bubbleOn = false,
+            onBubbleChange = {},
             onRetry = {},
             onDisconnect = {},
         )
@@ -61,6 +108,16 @@ class ScreensSnapshotTest {
     @Test
     fun overlayPermission() = captureScreen("overlay_permission") {
         OverlayPermissionScreen(onOpenSettings = {}, onNotNow = {}, demoTimeMs = 1_100L)
+    }
+
+    @Test
+    fun overlayPermissionSheet() = captureScreen("overlay_permission_sheet") {
+        OverlayPermissionScreen(
+            onOpenSettings = {},
+            onNotNow = {},
+            demoTimeMs = 1_100L,
+            sheetInitiallyOpen = true,
+        )
     }
 
     @Test
@@ -81,6 +138,32 @@ class ScreensSnapshotTest {
     @Test
     fun notificationPermission() = captureScreen("notification_permission") {
         NotificationPermissionScreen(samplePosition.at(0), onAllow = {}, onNotNow = {})
+    }
+
+    @Test
+    fun notificationPermissionSheet() = captureScreen("notification_permission_sheet") {
+        NotificationPermissionScreen(
+            samplePosition.at(0),
+            onAllow = {},
+            onNotNow = {},
+            sheetInitiallyOpen = true,
+        )
+    }
+
+    @Test
+    fun homeOverlaySheet() = captureScreen("home_overlay_sheet") {
+        HomeScreen(
+            reading = WorkerSnapshotData.walletPositions,
+            sample = samplePosition.at(0),
+            sampleMode = false,
+            bubbleOn = false,
+            onBubbleChange = {},
+            onRetry = {},
+            onDisconnect = {},
+            overlaySheetVisible = true,
+            onOpenOverlaySettings = {},
+            onDismissOverlaySheet = {},
+        )
     }
 
     @Test

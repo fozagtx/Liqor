@@ -22,6 +22,7 @@ data class BubbleUi(
     val animateDanger: Boolean = true,
     val asset: String? = null,
     val side: String? = null,
+    val rotation: List<BubbleUi> = emptyList(),
 )
 
 fun bubbleUi(
@@ -32,33 +33,36 @@ fun bubbleUi(
     val live = reading as? Reading.Live ?: return BubbleUi("–", BubbleState.Unknown, 0f)
     val closest = live.watched.minByOrNull { it.distance }
         ?: return BubbleUi("–", BubbleState.Unknown, 0f)
-    val level = live.watched.maxByOrNull { it.level.ordinal }?.level ?: closest.level
-    val value = distanceText(closest.distance)
     if (freshness == Freshness.Unknown) {
         return BubbleUi("–", BubbleState.Unknown, 0f)
     }
-    if (freshness == Freshness.Stale) {
-        return BubbleUi(
-            value,
-            BubbleState.Stale,
-            1f - closest.travelled.toFloat(),
-            asset = closest.position.asset,
-            side = closest.position.side,
-        )
-    }
-    val state = if (sample) {
-        BubbleState.Sample
-    } else {
-        level.toBubbleState()
-    }
-    return BubbleUi(
-        value,
-        state,
-        1f - closest.travelled.toFloat(),
-        asset = closest.position.asset,
-        side = closest.position.side,
+    val closestUi = watchedBubbleUi(
+        closest,
+        state = when {
+            freshness == Freshness.Stale -> BubbleState.Stale
+            sample -> BubbleState.Sample
+            else -> closest.level.toBubbleState()
+        },
     )
+    if (freshness != Freshness.Fresh || sample) return closestUi
+
+    val affected = live.watched
+        .filter { it.level == Level.Caution || it.level == Level.Danger }
+        .sortedBy { it.distance }
+        .map { watchedBubbleUi(it) }
+    return closestUi.copy(rotation = affected.takeIf { it.size > 1 } ?: emptyList())
 }
+
+private fun watchedBubbleUi(
+    watched: Watched,
+    state: BubbleState = watched.level.toBubbleState(),
+) = BubbleUi(
+    value = distanceText(watched.distance),
+    state = state,
+    cushion = 1f - watched.travelled.toFloat(),
+    asset = watched.position.asset,
+    side = watched.position.side,
+)
 
 fun Level.toBubbleState(): BubbleState = when (this) {
     Level.Safe -> BubbleState.Safe
