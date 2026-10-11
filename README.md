@@ -8,18 +8,28 @@ Open a leveraged Jupiter Perps trade, switch to X, Telegram or a game, and the m
   <tr>
     <td><img src="screenshots/bubble.png" width="240" alt="Bubble over Jupiter"></td>
     <td><img src="screenshots/panel.png" width="240" alt="Panel with train lines"></td>
-    <td><img src="screenshots/home.png" width="240" alt="Home screen"></td>
+    <td><img src="screenshots/home.png" width="240" alt="Home with positions and Bubble switch"></td>
   </tr>
   <tr>
-    <td><img src="screenshots/first-launch.png" width="240" alt="First launch with sample"></td>
-    <td><img src="screenshots/overlay-permission.png" width="240" alt="Overlay permission steps"></td>
-    <td><img src="screenshots/notification-permission.png" width="240" alt="Notification permission"></td>
+    <td><img src="screenshots/intro-before-after.png" width="240" alt="Intro: without and with Liqor"></td>
+    <td><img src="screenshots/intro-watches.png" width="240" alt="Intro: what Liqor watches"></td>
+    <td><img src="screenshots/intro-bubble-demo.png" width="240" alt="Intro: bubble gestures"></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/first-launch.png" width="240" alt="First launch"></td>
+    <td><img src="screenshots/overlay-permission.png" width="240" alt="Overlay permission sheet"></td>
+    <td><img src="screenshots/notification-permission.png" width="240" alt="Notification permission sheet"></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/bubble-on.png" width="240" alt="Bubble is on"></td>
+    <td><img src="screenshots/could-not-check.png" width="240" alt="Couldn't reach positions"></td>
+    <td><img src="screenshots/wallet-failed.png" width="240" alt="Wallet didn't respond"></td>
   </tr>
 </table>
 
-<img src="screenshots/bubble-states.png" width="720" alt="Bubble states: safe, caution, danger, stale, unknown, sample">
+<img src="screenshots/bubble-states.png" width="720" alt="Bubble states: safe, caution, danger, stale, unknown">
 
-The first row is from a live run against mainnet positions. The second row and the bubble states are rendered from the app's snapshot tests.
+The bubble and panel shots are from a live run against mainnet positions. The other screens and the bubble states are rendered from the app's snapshot tests.
 
 ## What it does
 
