@@ -1,5 +1,7 @@
 # Liqor
 
+**[Download the APK (v0.1.5)](https://liqorapp.xyz/liqor-v0.1.5.apk)** · **[Website](https://liqorapp.xyz)**
+
 Liqor shows how far you are from liquidation in a small bubble that floats over any app on your Solana Seeker.
 
 Open a leveraged Jupiter Perps trade, switch to X, Telegram or a game, and the market keeps moving. Borrow fees also pull your liquidation price closer while the price sits still. Positions get liquidated while their owners are busy in another app. Liqor keeps one number on screen: the price move that would liquidate your closest position.
