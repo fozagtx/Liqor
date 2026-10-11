@@ -1,11 +1,15 @@
 package com.liqor.service
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
+import android.content.ComponentCallbacks
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -13,17 +17,21 @@ import android.content.res.Configuration
 import android.graphics.Insets
 import android.graphics.PixelFormat
 import android.graphics.Rect
+import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.Settings
+import android.view.Display
+import android.view.Surface
 import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowManager
-import android.animation.ValueAnimator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -91,7 +99,11 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 class WatchService : LifecycleService() {
     private lateinit var prefs: Prefs
+    private lateinit var overlayContext: Context
     private lateinit var windowManager: WindowManager
+    private lateinit var displayManager: DisplayManager
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var lastDisplayRotation = Surface.ROTATION_0
     private val reader = DirectChainReader()
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val screenOnRequests = Channel<Unit>(Channel.CONFLATED)
@@ -116,6 +128,29 @@ class WatchService : LifecycleService() {
     private var panelVisible by mutableStateOf(false)
     private var sampleWatched by mutableStateOf(samplePosition.at(0))
 
+    private val overlayComponentCallbacks = object : ComponentCallbacks {
+        override fun onConfigurationChanged(newConfig: Configuration) {
+            onOverlayGeometryChanged()
+        }
+
+        override fun onLowMemory() = Unit
+    }
+
+    private val displayListener = object : DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) = Unit
+
+        override fun onDisplayRemoved(displayId: Int) = Unit
+
+        override fun onDisplayChanged(displayId: Int) {
+            if (displayId != Display.DEFAULT_DISPLAY) return
+            val rotation = displayManager.getDisplay(displayId)?.rotation ?: return
+            if (rotation != lastDisplayRotation) {
+                lastDisplayRotation = rotation
+                onOverlayGeometryChanged()
+            }
+        }
+    }
+
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == Intent.ACTION_SCREEN_ON) {
@@ -130,7 +165,16 @@ class WatchService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
-        windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
+        displayManager = getSystemService(DisplayManager::class.java)
+        val display = checkNotNull(displayManager.getDisplay(Display.DEFAULT_DISPLAY))
+        overlayContext = createDisplayContext(display).createWindowContext(
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            null,
+        )
+        windowManager = overlayContext.getSystemService(WindowManager::class.java)
+        lastDisplayRotation = display.rotation
+        overlayContext.registerComponentCallbacks(overlayComponentCallbacks)
+        displayManager.registerDisplayListener(displayListener, mainHandler)
         createNotificationChannels()
         startStatusForeground()
         registerReceiver(
@@ -166,8 +210,7 @@ class WatchService : LifecycleService() {
 
     override fun onBind(intent: Intent): IBinder? = super.onBind(intent)
 
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
+    private fun onOverlayGeometryChanged() {
         closePanel()
         bubbleParams?.let { params ->
             setBubbleStartPosition(params)
@@ -184,6 +227,8 @@ class WatchService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        overlayContext.unregisterComponentCallbacks(overlayComponentCallbacks)
+        displayManager.unregisterDisplayListener(displayListener)
         runCatching { unregisterReceiver(screenReceiver) }
         removePanel()
         removeBubble()
@@ -319,17 +364,15 @@ class WatchService : LifecycleService() {
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.LEFT
-            allowDisplayCutout()
+            layoutEdgeToEdge()
             setBubbleStartPosition(this)
         }
         view.addOnLayoutChangeListener { changed, _, _, _, _, _, _, _, _ ->
+            updateBubbleGestureExclusion(changed)
             val padding = bubbleShadowPaddingPx()
             val diameter = bubbleDiameterPx()
             val contentWidth = changed.width - 2 * padding
             val left = padding + ((contentWidth - diameter).coerceAtLeast(0) / 2)
-            changed.systemGestureExclusionRects = listOf(
-                Rect(left, padding, left + diameter, changed.height - padding),
-            )
             val params = bubbleParams
             if (bubbleView === changed && params != null && changed.height > 0) {
                 val contentHeight = (changed.height - 2 * padding).coerceAtLeast(diameter)
@@ -393,7 +436,7 @@ class WatchService : LifecycleService() {
             return
         }
         val screenBounds = windowManager.currentWindowMetrics.bounds
-        val density = resources.displayMetrics.density
+        val density = overlayContext.resources.displayMetrics.density
         val diameter = bubbleDiameterPx()
         val insets = safeInsets()
         val padding = bubbleShadowPaddingPx()
@@ -442,6 +485,11 @@ class WatchService : LifecycleService() {
                 params.y = (startY + (targetY - startY) * progress).toInt()
                 bubbleView?.let { runCatching { windowManager.updateViewLayout(it, params) } }
             }
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    bubbleView?.let(::updateBubbleGestureExclusion)
+                }
+            })
             start()
         }
     }
@@ -457,7 +505,7 @@ class WatchService : LifecycleService() {
 
     private fun bubbleTagHeightPx(): Int = when {
         bubbleUi.state == com.liqor.ui.BubbleState.Sample ->
-            dpToPixels((16f * resources.configuration.fontScale + 8f).roundToInt())
+            dpToPixels((16f * overlayContext.resources.configuration.fontScale + 8f).roundToInt())
         bubbleUi.asset != null && bubbleUi.side != null -> dpToPixels(20)
         else -> 0
     }
@@ -501,12 +549,19 @@ class WatchService : LifecycleService() {
         )
     }
 
-    private fun WindowManager.LayoutParams.allowDisplayCutout() {
+    private fun WindowManager.LayoutParams.layoutEdgeToEdge() {
+        setFitInsetsTypes(0)
         layoutInDisplayCutoutMode =
             WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
     }
 
-    private fun dpToPixels(dp: Int) = (dp * resources.displayMetrics.density).roundToInt()
+    private fun updateBubbleGestureExclusion(view: View) {
+        if (view.width <= 0 || view.height <= 0) return
+        view.systemGestureExclusionRects = listOf(Rect(0, 0, view.width, view.height))
+    }
+
+    private fun dpToPixels(dp: Int) =
+        (dp * overlayContext.resources.displayMetrics.density).roundToInt()
 
     private fun bubbleDiameterPx() = dpToPixels(56)
 
@@ -516,8 +571,8 @@ class WatchService : LifecycleService() {
         if (hideView != null) return
         val view = createComposeView()
         val params = WindowManager.LayoutParams(
-            (56 * resources.displayMetrics.density).toInt(),
-            (56 * resources.displayMetrics.density).toInt(),
+            (56 * overlayContext.resources.displayMetrics.density).toInt(),
+            (56 * overlayContext.resources.displayMetrics.density).toInt(),
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
@@ -525,7 +580,7 @@ class WatchService : LifecycleService() {
         ).apply {
             gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
             y = dpToPixels(24) + safeInsets().bottom
-            allowDisplayCutout()
+            layoutEdgeToEdge()
         }
         view.setContent {
             com.liqor.ui.theme.LiqorTheme {
@@ -571,7 +626,7 @@ class WatchService : LifecycleService() {
         val owner = OverlayOwner()
         val view = createComposeView(owner)
         val insets = safeInsets()
-        val density = resources.displayMetrics.density
+        val density = overlayContext.resources.displayMetrics.density
         val padding = bubbleShadowPaddingPx()
         val bubbleBottomPx = (bubbleParams?.y ?: 0) + padding + bubbleContentHeightPx()
         view.setContent {
@@ -614,7 +669,7 @@ class WatchService : LifecycleService() {
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                 WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT,
-        ).apply { allowDisplayCutout() }
+        ).apply { layoutEdgeToEdge() }
         runCatching { windowManager.addView(view, params) }.onSuccess {
             panelView = view
             serviceScope.launch {
@@ -725,16 +780,16 @@ class WatchService : LifecycleService() {
     }
 
     private fun createComposeView(owner: OverlayOwner? = null): ComposeView =
-        ComposeView(this).also { view ->
+        ComposeView(overlayContext).also { view ->
             val viewOwner = owner ?: OverlayOwner()
             viewOwner.create()
             overlayOwners[view] = viewOwner
-            val lifecycleTag = resources.getIdentifier(
+            val lifecycleTag = overlayContext.resources.getIdentifier(
                 "view_tree_lifecycle_owner",
                 "id",
                 packageName,
             )
-            val savedStateTag = resources.getIdentifier(
+            val savedStateTag = overlayContext.resources.getIdentifier(
                 "view_tree_saved_state_registry_owner",
                 "id",
                 packageName,
