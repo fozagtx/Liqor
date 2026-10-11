@@ -149,6 +149,22 @@ h1 {
 
 .phone .screen img.is-on { opacity: 1; transform: none; }
 
+/* every screen sits side by side; scrolling slides the strip one screen per step */
+.phone .strip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  will-change: transform;
+}
+
+.phone .strip img {
+  position: relative;
+  flex: 0 0 100%;
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
 .phone .frame {
   position: absolute;
   inset: 0;
@@ -211,8 +227,6 @@ h1 {
   line-height: 1.55;
   color: var(--muted);
 }
-
-.step .phone { display: none; }
 
 .levels { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -282,23 +296,31 @@ h1 {
   to { opacity: 1; transform: none; }
 }
 
-/* phones: every step brings its own Seeker */
+/* phones: the Seeker pins to the top and the steps scroll up beneath it */
 @media (max-width: 820px) {
   .nav { left: 20px; right: 20px; }
   .hero { padding-top: 96px; }
   h1 { font-size: 30px; }
-  .tour { display: block; margin-top: 56px; }
-  .stage { display: none; }
+  .tour { display: flex; flex-direction: column; margin-top: 40px; width: 100%; gap: 0; }
+  .stage {
+    order: -1;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    justify-content: center;
+    padding: 16px 0 20px;
+    background: var(--ground);
+    --pw: min(250px, 25svh, 62vw);
+  }
+  .steps { padding: 0 24px; }
   .step, .step:first-child, .step:last-child {
-    min-height: 0;
-    padding: 0 0 72px;
-    opacity: 1;
+    min-height: 38svh;
+    padding: 0;
     align-items: center;
     text-align: center;
     max-width: none;
   }
-  .step .phone { display: block; --pw: min(260px, 68vw); margin-bottom: 28px; }
-  .step .phone .screen img { opacity: 1; transform: none; }
+  .step:last-child { min-height: 50svh; justify-content: flex-start; padding-top: 6svh; }
   .step h2 { font-size: 24px; }
   .step p { font-size: 15px; }
   .levels { justify-content: center; }

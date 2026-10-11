@@ -1,38 +1,50 @@
-// Lights up the step nearest the middle of the screen and shows its screen in the pinned Seeker.
+// Slides the pinned Seeker's screens in step with the scroll: each screen holds while its step
+// sits in the middle of the view, then glides to the next one at the same pace every time.
 (() => {
   const steps = [...document.querySelectorAll('.step')]
-  const shots = [...document.querySelectorAll('.stage .screen img')]
-  let active = 0
+  const stage = document.querySelector('.stage')
+  const strip = document.querySelector('.stage .strip')
+  const still = matchMedia('(prefers-reduced-motion: reduce)')
+  let active = -1
   const update = () => {
-    const mid = window.innerHeight / 2
-    let best = 0
-    let bestDist = Infinity
-    steps.forEach((step, i) => {
-      const r = step.querySelector('h2').getBoundingClientRect()
-      const d = Math.abs(r.top + r.height / 2 - mid)
-      if (d < bestDist) {
-        bestDist = d
-        best = i
-      }
+    const vh = window.innerHeight
+    const pinnedTop = stage.style.order !== undefined && getComputedStyle(stage).order === '-1'
+    const top = pinnedTop ? stage.getBoundingClientRect().bottom : 0
+    const ref = (top + vh) / 2
+    const centers = steps.map((s) => {
+      const r = s.querySelector('h2').getBoundingClientRect()
+      return r.top + r.height / 2
     })
-    if (best === active) return
-    active = best
-    steps.forEach((s, i) => s.classList.toggle('is-active', i === best))
-    shots.forEach((s, i) => s.classList.toggle('is-on', i === best))
+    let pos = 0
+    if (ref >= centers[centers.length - 1]) pos = centers.length - 1
+    else {
+      for (let i = 0; i < centers.length - 1; i++) {
+        if (ref >= centers[i] && ref < centers[i + 1]) {
+          const f = (ref - centers[i]) / (centers[i + 1] - centers[i])
+          const t = Math.min(1, Math.max(0, (f - 0.3) / 0.4))
+          pos = i + t * t * (3 - 2 * t)
+          break
+        }
+      }
+    }
+    if (still.matches) pos = Math.round(pos)
+    strip.style.transform = `translate3d(${-pos * 100}%, 0, 0)`
+    const now = Math.round(pos)
+    if (now !== active) {
+      active = now
+      steps.forEach((s, i) => s.classList.toggle('is-active', i === now))
+    }
   }
   let queued = false
-  window.addEventListener(
-    'scroll',
-    () => {
-      if (queued) return
-      queued = true
-      requestAnimationFrame(() => {
-        queued = false
-        update()
-      })
-    },
-    { passive: true },
-  )
-  window.addEventListener('resize', update)
+  const schedule = () => {
+    if (queued) return
+    queued = true
+    requestAnimationFrame(() => {
+      queued = false
+      update()
+    })
+  }
+  window.addEventListener('scroll', schedule, { passive: true })
+  window.addEventListener('resize', schedule)
   update()
 })()
