@@ -28,7 +28,6 @@ data class BubbleUi(
 fun bubbleUi(
     reading: Reading,
     freshness: Freshness,
-    sample: Boolean = false,
 ): BubbleUi {
     val live = reading as? Reading.Live ?: return BubbleUi("–", BubbleState.Unknown, 0f)
     val closest = live.watched.minByOrNull { it.distance }
@@ -40,11 +39,10 @@ fun bubbleUi(
         closest,
         state = when {
             freshness == Freshness.Stale -> BubbleState.Stale
-            sample -> BubbleState.Sample
             else -> closest.level.toBubbleState()
         },
     )
-    if (freshness != Freshness.Fresh || sample) return closestUi
+    if (freshness != Freshness.Fresh) return closestUi
 
     val affected = live.watched
         .filter { it.level == Level.Caution || it.level == Level.Danger }

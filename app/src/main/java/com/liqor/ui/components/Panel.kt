@@ -43,7 +43,6 @@ fun Panel(
     reading: Reading,
     freshness: Freshness,
     ageSeconds: Long?,
-    sample: Boolean,
     onOpenJupiter: () -> Unit,
     onMore: () -> Unit,
     expandedPosition: String? = null,
@@ -65,7 +64,6 @@ fun Panel(
                 is Reading.Live -> LivePanelContent(
                     reading = reading,
                     stale = freshness == Freshness.Stale,
-                    sample = sample,
                     expandedPosition = expandedPosition,
                     onTogglePosition = onTogglePosition,
                     onMore = onMore,
@@ -95,7 +93,6 @@ fun Panel(
 private fun LivePanelContent(
     reading: Reading.Live,
     stale: Boolean,
-    sample: Boolean,
     expandedPosition: String?,
     onTogglePosition: (String) -> Unit,
     onMore: () -> Unit,

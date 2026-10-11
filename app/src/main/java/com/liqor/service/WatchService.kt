@@ -77,7 +77,6 @@ import com.liqor.domain.Freshness
 import com.liqor.domain.Level
 import com.liqor.domain.Reading
 import com.liqor.domain.Watched
-import com.liqor.domain.samplePosition
 import com.liqor.domain.sentence
 import com.liqor.ui.BubbleUi
 import com.liqor.ui.bubbleUi
@@ -116,7 +115,6 @@ class WatchService : LifecycleService() {
     private var panelReading by mutableStateOf<Reading>(Reading.CouldNotCheck)
     private var panelFreshness by mutableStateOf(Freshness.Unknown)
     private var panelAgeSeconds by mutableStateOf<Long?>(null)
-    private var sampleStartedAt = 0L
     private var screenOn = true
     private var panelOpen = false
     private var expandedAddress by mutableStateOf<String?>(null)
@@ -126,8 +124,6 @@ class WatchService : LifecycleService() {
     private var hideView: ComposeView? = null
     private var hideParams: WindowManager.LayoutParams? = null
     private var panelVisible by mutableStateOf(false)
-    private var sampleWatched by mutableStateOf(samplePosition.at(0))
-
     private val overlayComponentCallbacks = object : ComponentCallbacks {
         override fun onConfigurationChanged(newConfig: Configuration) {
             onOverlayGeometryChanged()
@@ -189,7 +185,6 @@ class WatchService : LifecycleService() {
             stopSelf()
             return
         }
-        sampleStartedAt = System.currentTimeMillis()
         serviceScope.launch { pollingLoop() }
         serviceScope.launch { freshnessLoop() }
     }
@@ -240,23 +235,14 @@ class WatchService : LifecycleService() {
 
     private suspend fun pollingLoop() {
         while (serviceScope.isActive) {
-            if (prefs.mode == Prefs.MODE_SAMPLE) {
-                sampleWatched = samplePosition.at(System.currentTimeMillis() - sampleStartedAt)
-                reading = Reading.Live(listOf(sampleWatched), Instant.now())
-                freshness = Freshness.Fresh
-                updateSurfaces()
-                updateStatusNotification()
-                delay(1_000)
-            } else {
-                fetchLive()
-                val danger = (reading as? Reading.Live)?.watched?.any { it.level == Level.Danger } == true
-                val interval = when {
-                    reading == Reading.NoPositions || !screenOn -> 60_000L
-                    danger || panelOpen -> 5_000L
-                    else -> 15_000L
-                }
-                withTimeoutOrNull(interval) { screenOnRequests.receive() }
+            fetchLive()
+            val danger = (reading as? Reading.Live)?.watched?.any { it.level == Level.Danger } == true
+            val interval = when {
+                reading == Reading.NoPositions || !screenOn -> 60_000L
+                danger || panelOpen -> 5_000L
+                else -> 15_000L
             }
+            withTimeoutOrNull(interval) { screenOnRequests.receive() }
         }
     }
 
@@ -336,19 +322,7 @@ class WatchService : LifecycleService() {
         if (panelOpen) updatePanelContent()
     }
 
-    private fun currentBubbleUi(): BubbleUi =
-        if (prefs.mode == Prefs.MODE_SAMPLE) {
-            BubbleUi(
-                value = com.liqor.domain.distanceText(sampleWatched.distance),
-                state = com.liqor.ui.BubbleState.Sample,
-                cushion = 1f - sampleWatched.travelled.toFloat(),
-                animateDanger = false,
-                asset = sampleWatched.position.asset,
-                side = sampleWatched.position.side,
-            )
-        } else {
-            bubbleUi(reading, freshness)
-        }
+    private fun currentBubbleUi(): BubbleUi = bubbleUi(reading, freshness)
 
     private fun showBubble() {
         if (!Settings.canDrawOverlays(this) || reading == Reading.NoPositions || prefs.hidden) return
@@ -503,12 +477,8 @@ class WatchService : LifecycleService() {
         params.y = bounds.minY + ((bounds.maxY - bounds.minY) * prefs.bubbleYFraction).toInt()
     }
 
-    private fun bubbleTagHeightPx(): Int = when {
-        bubbleUi.state == com.liqor.ui.BubbleState.Sample ->
-            dpToPixels((16f * overlayContext.resources.configuration.fontScale + 8f).roundToInt())
-        bubbleUi.asset != null && bubbleUi.side != null -> dpToPixels(20)
-        else -> 0
-    }
+    private fun bubbleTagHeightPx(): Int =
+        if (bubbleUi.asset != null && bubbleUi.side != null) dpToPixels(20) else 0
 
     private fun bubbleContentHeightPx(view: View? = bubbleView): Int {
         val padding = bubbleShadowPaddingPx()
@@ -635,7 +605,6 @@ class WatchService : LifecycleService() {
                     reading = panelReading,
                     freshness = panelFreshness,
                     ageSeconds = panelAgeSeconds,
-                    sample = prefs.mode == Prefs.MODE_SAMPLE,
                     visible = panelVisible,
                     side = prefs.bubbleSide,
                     safeLeft = (insets.left / density).dp,
@@ -687,7 +656,6 @@ class WatchService : LifecycleService() {
         reading: Reading,
         freshness: Freshness,
         ageSeconds: Long?,
-        sample: Boolean,
         visible: Boolean,
         side: String,
         safeLeft: Dp,
@@ -734,7 +702,6 @@ class WatchService : LifecycleService() {
                         reading = reading,
                         freshness = freshness,
                         ageSeconds = ageSeconds,
-                        sample = sample,
                         onOpenJupiter = onOpenJupiter,
                         onMore = onMore,
                         expandedPosition = expandedAddress,
@@ -814,7 +781,6 @@ class WatchService : LifecycleService() {
     }
 
     private fun statusNotificationText(): String = when {
-            prefs.mode == Prefs.MODE_SAMPLE -> getString(R.string.status_demo)
             reading == Reading.NoPositions -> getString(R.string.status_all_clear)
             reading == Reading.CouldNotCheck -> getString(R.string.status_could_not_check)
             reading is Reading.Live -> closestPosition((reading as Reading.Live))

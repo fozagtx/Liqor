@@ -61,7 +61,6 @@ fun capturePanel(
                 reading = reading,
                 freshness = freshness,
                 ageSeconds = ageSeconds,
-                sample = false,
                 onOpenJupiter = {},
                 onMore = {},
                 expandedPosition = expandedPosition,

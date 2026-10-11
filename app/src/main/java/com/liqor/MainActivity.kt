@@ -121,8 +121,7 @@ class MainActivity : ComponentActivity() {
                     }
                     LaunchedEffect(screen, appMode) {
                         if (screen == AppScreen.Intro ||
-                            screen == AppScreen.FirstLaunch ||
-                            appMode == Prefs.MODE_SAMPLE
+                            screen == AppScreen.FirstLaunch
                         ) {
                             val start = System.currentTimeMillis()
                             while (true) {
@@ -152,8 +151,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                             AppScreen.NoPositions -> NoPositionsScreen(
-                                sample = samplePosition.at(elapsedMs),
-                                onShowSample = ::startSampleMode,
+                                onTurnOnBubble = ::beginOverlaySetup,
                             )
                             AppScreen.CouldNotCheck -> CouldNotCheckScreen(
                                 walletFailed = walletFailed,
@@ -178,8 +176,6 @@ class MainActivity : ComponentActivity() {
                             )
                             AppScreen.Home -> HomeScreen(
                                 reading = reading,
-                                sample = samplePosition.at(elapsedMs),
-                                sampleMode = appMode == Prefs.MODE_SAMPLE,
                                 bubbleOn = bubbleOn,
                                 onBubbleChange = ::changeBubbleEnabled,
                                 onRetry = ::refreshPositions,
@@ -279,13 +275,6 @@ class MainActivity : ComponentActivity() {
                 })
             }
         }
-    }
-
-    private fun startSampleMode() {
-        prefs.mode = Prefs.MODE_SAMPLE
-        prefs.walletAddress = null
-        appMode = Prefs.MODE_SAMPLE
-        beginOverlaySetup()
     }
 
     private fun beginOverlaySetup() {

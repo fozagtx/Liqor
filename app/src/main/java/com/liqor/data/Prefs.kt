@@ -14,9 +14,13 @@ class Prefs(context: Context) {
         }
 
     var mode: String
-        get() = values.getString(KEY_MODE, MODE_NONE) ?: MODE_NONE
+        get() = when (values.getString(KEY_MODE, MODE_NONE)) {
+            MODE_NONE -> MODE_NONE
+            MODE_LIVE -> MODE_LIVE
+            else -> MODE_NONE
+        }
         set(value) {
-            require(value in setOf(MODE_NONE, MODE_LIVE, MODE_SAMPLE))
+            require(value in setOf(MODE_NONE, MODE_LIVE))
             values.edit().putString(KEY_MODE, value).apply()
         }
 
@@ -65,7 +69,6 @@ class Prefs(context: Context) {
     companion object {
         const val MODE_NONE = "none"
         const val MODE_LIVE = "live"
-        const val MODE_SAMPLE = "sample"
         const val SIDE_LEFT = "left"
         const val SIDE_RIGHT = "right"
 

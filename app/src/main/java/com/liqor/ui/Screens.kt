@@ -175,16 +175,18 @@ fun PositionsFoundScreen(
 }
 
 @Composable
-fun NoPositionsScreen(sample: Watched, onShowSample: () -> Unit) {
+fun NoPositionsScreen(onTurnOnBubble: () -> Unit) {
     HeroTemplate(
         title = stringResource(R.string.no_positions_headline),
-        primaryText = stringResource(R.string.show_bubble_preview),
-        onPrimary = onShowSample,
-        illustration = {
-            TicketCard(
-                watched = sample,
-                title = stringResource(R.string.ticket_distance_to_liquidation),
-                modifier = Modifier.fillMaxWidth(),
+        body = stringResource(R.string.no_positions_body),
+        hasHeroCard = true,
+        primaryText = stringResource(R.string.turn_on_bubble),
+        onPrimary = onTurnOnBubble,
+        illustration = { illustrationHeight ->
+            CoverageIllustration(
+                settled = true,
+                modifier = Modifier.fillMaxWidth().height(illustrationHeight),
+                animateHighlight = false,
             )
         },
     )
@@ -344,8 +346,6 @@ private fun RetryBadge(rotation: Float, modifier: Modifier = Modifier) {
 @Composable
 fun HomeScreen(
     reading: Reading,
-    sample: Watched,
-    sampleMode: Boolean,
     bubbleOn: Boolean,
     onBubbleChange: (Boolean) -> Unit,
     onRetry: () -> Unit,
@@ -355,8 +355,8 @@ fun HomeScreen(
     onDismissOverlaySheet: () -> Unit = {},
 ) {
     val live = reading as? Reading.Live
-    val watched = if (sampleMode) sample else live?.let(::closestPosition)
-    val canRetry = !sampleMode && reading !is Reading.Live && reading != Reading.NoPositions
+    val watched = live?.let(::closestPosition)
+    val canRetry = reading !is Reading.Live && reading != Reading.NoPositions
     Box(Modifier.fillMaxSize()) {
         FormTemplate(
             headerRight = { WalletAddressChip(stringResource(R.string.wallet_address)) },
@@ -369,16 +369,13 @@ fun HomeScreen(
             if (watched != null) {
                 TicketCard(
                     watched = watched,
-                    title = stringResource(
-                        if (sampleMode) R.string.ticket_distance_to_liquidation
-                        else R.string.ticket_closest_to_liquidation,
-                    ),
+                    title = stringResource(R.string.ticket_closest_to_liquidation),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Spacer(Modifier.height(Space.cardStack))
                 PositionListSection(
-                    watched = if (sampleMode) listOf(sample) else live?.orEmptyByDistance().orEmpty(),
-                    totalCount = if (sampleMode) 1 else live?.watched?.size ?: 0,
+                    watched = live.orEmptyByDistance(),
+                    totalCount = live.watched.size,
                 )
                 Spacer(Modifier.height(Space.cardStack))
             } else {

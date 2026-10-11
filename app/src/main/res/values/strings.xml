@@ -29,8 +29,8 @@
     <string name="position_details">%1$dx · %2$s</string>
     <string name="position_details_beta">%1$dx · Beta · %2$s</string>
     <string name="turn_on_bubble">Turn on the bubble</string>
-    <string name="no_positions_headline">No open positions. This is what you’ll see.</string>
-    <string name="show_bubble_preview">Show a bubble preview</string>
+    <string name="no_positions_headline">No open positions yet.</string>
+    <string name="no_positions_body">Your bubble appears when you open one.</string>
     <string name="step_one_of_two">STEP 1 OF 2</string>
     <string name="overlay_title">Let Liqor sit on top of other apps.</string>
     <string name="overlay_body">Android opens a settings page. Turn on the switch next to Liqor, then come back.</string>
@@ -89,7 +89,6 @@
     <string name="wallet_connect_failed">Couldn’t connect to a wallet.</string>
     <string name="status_all_clear">All clear. No open positions.</string>
     <string name="status_could_not_check">Couldn\'t check. Trying again.</string>
-    <string name="status_demo">Example position. Connect a wallet to watch your positions.</string>
     <string name="notification_channel_status">Position status</string>
     <string name="notification_channel_alerts">Liquidation alerts</string>
     <string name="notification_details">Details</string>

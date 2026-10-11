@@ -648,11 +648,13 @@ private fun LiquidatedEventCard(
 }
 
 @Composable
-private fun CoverageIllustration(
+internal fun CoverageIllustration(
     settled: Boolean,
     modifier: Modifier,
+    animateHighlight: Boolean = true,
 ) {
-    val shouldHighlight = settled && !LocalReducedMotion.current && LocalAnimatedScope.current != null
+    val shouldHighlight =
+        animateHighlight && settled && !LocalReducedMotion.current && LocalAnimatedScope.current != null
     val highlightPhase = if (shouldHighlight) {
         val transition = rememberInfiniteTransition(label = "venue-highlights")
         transition.animateFloat(
