@@ -38,6 +38,7 @@ import com.liqor.ui.ScreenHost
 import com.liqor.ui.SplashScreen
 import com.liqor.ui.theme.LiqorTheme
 import com.liqor.wallet.Base58
+import com.liqor.wallet.shortAddress
 import com.liqor.service.WatchService
 import com.solana.mobilewalletadapter.clientlib.ActivityResultSender
 import com.solana.mobilewalletadapter.clientlib.ConnectionIdentity
@@ -55,8 +56,8 @@ class MainActivity : ComponentActivity() {
     private val adapter by lazy {
         MobileWalletAdapter(
             ConnectionIdentity(
-                identityUri = Uri.parse("https://github.com/fozagtx/Liqor"),
-                iconUri = Uri.parse("favicon.ico"),
+                identityUri = Uri.parse("https://liqorapp.xyz"),
+                iconUri = Uri.parse("favicon.png"),
                 identityName = "Liqor",
             ),
         ).apply {
@@ -145,7 +146,11 @@ class MainActivity : ComponentActivity() {
                             AppScreen.PositionsFound -> {
                                 val live = reading as? Reading.Live
                                 if (live != null) {
-                                    PositionsFoundScreen(live, onTurnOnBubble = ::beginOverlaySetup)
+                                    PositionsFoundScreen(
+                                        live,
+                                        onTurnOnBubble = ::beginOverlaySetup,
+                                        wallet = shortAddress(checkNotNull(walletAddress)),
+                                    )
                                 } else {
                                     LoadingScreen()
                                 }
@@ -176,6 +181,7 @@ class MainActivity : ComponentActivity() {
                             )
                             AppScreen.Home -> HomeScreen(
                                 reading = reading,
+                                wallet = shortAddress(checkNotNull(walletAddress)),
                                 bubbleOn = bubbleOn,
                                 onBubbleChange = ::changeBubbleEnabled,
                                 onRetry = ::refreshPositions,

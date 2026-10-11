@@ -14,6 +14,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+internal const val JLP_WALLET = "CYEd2AVkTCfDP7G5M8NVUQYvNi6H13icLpaz2KoUkJcF"
+
 class ChainParityTest {
     @Test
     fun capturedJupiterAndGumResponsesMatchTheirLiveApis() = runBlocking {
@@ -108,7 +110,6 @@ class ChainParityTest {
     }
 
     private companion object {
-        const val JLP_WALLET = "CYEd2AVkTCfDP7G5M8NVUQYvNi6H13icLpaz2KoUkJcF"
         const val FR_WALLET = "FRfHg2CdTChB3KaaW7LELXSft17FCMpRyMpmTzeuPFYk"
         const val ED_WALLET = "EDik6ZQi4P2GEmvw1RxNSWbiemdPSdb83r1CxromtHWQ"
     }

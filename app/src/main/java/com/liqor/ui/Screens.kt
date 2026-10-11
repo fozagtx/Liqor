@@ -152,7 +152,7 @@ fun FirstLaunchScreen(sample: Watched, onConnect: () -> Unit) {
 fun PositionsFoundScreen(
     reading: Reading.Live,
     onTurnOnBubble: () -> Unit,
-    wallet: String = stringResource(R.string.wallet_address),
+    wallet: String,
 ) {
     val closest = reading.watched.minByOrNull { it.distance } ?: return
     HeroTemplate(
@@ -346,6 +346,7 @@ private fun RetryBadge(rotation: Float, modifier: Modifier = Modifier) {
 @Composable
 fun HomeScreen(
     reading: Reading,
+    wallet: String,
     bubbleOn: Boolean,
     onBubbleChange: (Boolean) -> Unit,
     onRetry: () -> Unit,
@@ -359,7 +360,7 @@ fun HomeScreen(
     val canRetry = reading !is Reading.Live && reading != Reading.NoPositions
     Box(Modifier.fillMaxSize()) {
         FormTemplate(
-            headerRight = { WalletAddressChip(stringResource(R.string.wallet_address)) },
+            headerRight = { WalletAddressChip(wallet) },
             primaryText = if (canRetry) stringResource(R.string.try_again) else null,
             onPrimary = if (canRetry) onRetry else null,
             secondaryText = stringResource(R.string.disconnect),

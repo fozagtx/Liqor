@@ -18,7 +18,6 @@
     <string name="train_now_price">NOW %1$s</string>
     <string name="train_entry_price">ENTRY %1$s</string>
     <string name="train_liquidation_price">LIQUIDATION %1$s</string>
-    <string name="wallet_address">CYEd…JcF</string>
     <string name="ticket_distance_to_liquidation">DISTANCE TO LIQUIDATION</string>
     <string name="ticket_closest_to_liquidation">CLOSEST TO LIQUIDATION</string>
     <string name="first_launch_headline">Know how far you are from liquidation.</string>

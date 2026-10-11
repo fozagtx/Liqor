@@ -52,6 +52,7 @@ class ScreensSnapshotTest {
     fun homeLive() = captureScreen("home_live") {
         HomeScreen(
             reading = WorkerSnapshotData.walletPositions,
+            wallet = WorkerSnapshotData.walletAddress,
             bubbleOn = true,
             onBubbleChange = {},
             onRetry = {},
@@ -63,6 +64,7 @@ class ScreensSnapshotTest {
     fun homeFivePositions() = captureScreen("home_five_positions") {
         HomeScreen(
             reading = WorkerSnapshotData.all,
+            wallet = WorkerSnapshotData.walletAddress,
             bubbleOn = true,
             onBubbleChange = {},
             onRetry = {},
@@ -74,6 +76,7 @@ class ScreensSnapshotTest {
     fun homeBubbleOff() = captureScreen("home_bubble_off") {
         HomeScreen(
             reading = WorkerSnapshotData.walletPositions,
+            wallet = WorkerSnapshotData.walletAddress,
             bubbleOn = false,
             onBubbleChange = {},
             onRetry = {},
@@ -85,6 +88,7 @@ class ScreensSnapshotTest {
     fun homeNoPositions() = captureScreen("home_no_positions") {
         HomeScreen(
             reading = Reading.NoPositions,
+            wallet = WorkerSnapshotData.walletAddress,
             bubbleOn = false,
             onBubbleChange = {},
             onRetry = {},
@@ -146,6 +150,7 @@ class ScreensSnapshotTest {
     fun homeOverlaySheet() = captureScreen("home_overlay_sheet") {
         HomeScreen(
             reading = WorkerSnapshotData.walletPositions,
+            wallet = WorkerSnapshotData.walletAddress,
             bubbleOn = false,
             onBubbleChange = {},
             onRetry = {},

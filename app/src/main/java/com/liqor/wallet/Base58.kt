@@ -36,3 +36,6 @@ object Base58 {
         return ByteArray(zeroCount) + bytes
     }
 }
+
+fun shortAddress(address: String): String =
+    if (address.length <= 10) address else "${address.take(4)}…${address.takeLast(4)}"

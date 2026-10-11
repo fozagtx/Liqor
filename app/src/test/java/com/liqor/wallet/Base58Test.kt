@@ -18,4 +18,13 @@ class Base58Test {
 
         assertArrayEquals(bytes, Base58.decode(Base58.encode(bytes)))
     }
+
+    @Test
+    fun shortensAddressesAndPreservesShortInputs() {
+        assertEquals(
+            "Hvkg…UVnZ",
+            shortAddress("HvkgNZW7ksstACijf987WcFbkFxCaacMCftoNQL5UVnZ"),
+        )
+        assertEquals("1234567890", shortAddress("1234567890"))
+    }
 }

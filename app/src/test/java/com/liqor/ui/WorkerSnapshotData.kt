@@ -1,5 +1,6 @@
 package com.liqor.ui
 
+import com.liqor.chain.JLP_WALLET
 import com.liqor.domain.PositionDto
 import com.liqor.domain.PositionsResponse
 import com.liqor.domain.Reading
@@ -7,6 +8,7 @@ import com.liqor.domain.Watched
 import com.liqor.domain.positionJson
 import com.liqor.domain.read
 import com.liqor.domain.validate
+import com.liqor.wallet.shortAddress
 import java.time.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -18,7 +20,7 @@ private data class BetaWorkerCapture(
 )
 
 internal object WorkerSnapshotData {
-    const val walletAddress = "CYEd…JcF"
+    val walletAddress = shortAddress(JLP_WALLET)
 
     private val response: PositionsResponse by lazy {
         val stream = requireNotNull(
