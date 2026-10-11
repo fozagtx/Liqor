@@ -24,42 +24,13 @@ body {
 
 a { color: inherit; }
 
-.nav {
-  position: absolute;
-  top: 24px;
-  left: 32px;
-  right: 32px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 15px;
-  text-decoration: none;
-}
-
-.brand img { width: 24px; height: 24px; }
-
-.nav-link {
-  font-size: 13px;
-  color: #8a8a8a;
-  text-decoration: none;
-  transition: color 150ms;
-}
-
-.nav-link:hover { color: var(--ink); }
-
+/* desktop: the hero and steps scroll on the left, the Seeker stays pinned on the right */
 .hero {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 120px 24px 0;
-  text-align: center;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 .logo { filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.14)); }
@@ -70,7 +41,7 @@ h1 {
   line-height: 1.12;
   letter-spacing: -0.025em;
   font-weight: 500;
-  max-width: 760px;
+  max-width: 560px;
 }
 
 .muted { color: #8a8a8a; }
@@ -179,8 +150,8 @@ h1 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 80px;
-  width: min(1040px, 90vw);
-  margin: 64px auto 0;
+  width: min(1080px, 90vw);
+  margin: 0 auto;
 }
 
 .stage {
@@ -202,7 +173,6 @@ h1 {
   transition: opacity 400ms ease;
 }
 
-.step:first-child { min-height: 60vh; justify-content: flex-start; padding-top: 14vh; }
 .step:last-child { min-height: 80vh; }
 .step.is-active { opacity: 1; }
 
@@ -284,7 +254,7 @@ h1 {
   h1.anim { animation-delay: 60ms; }
   .cta.anim { animation-delay: 120ms; }
   .runs-on.anim { animation-delay: 180ms; }
-  .tour.anim { animation-delay: 240ms; }
+  .stage.anim { animation-delay: 240ms; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -298,10 +268,10 @@ h1 {
 
 /* phones: the Seeker pins to the top and the steps scroll up beneath it */
 @media (max-width: 820px) {
-  .nav { left: 20px; right: 20px; }
-  .hero { padding-top: 96px; }
+  .hero { order: -2; min-height: 0; padding: 72px 24px 40px; align-items: center; text-align: center; }
   h1 { font-size: 30px; }
-  .tour { display: flex; flex-direction: column; margin-top: 40px; width: 100%; gap: 0; }
+  .tour { display: flex; flex-direction: column; width: 100%; gap: 0; }
+  .flow { display: contents; }
   .stage {
     order: -1;
     top: 0;
@@ -313,7 +283,7 @@ h1 {
     --pw: min(250px, 25svh, 62vw);
   }
   .steps { padding: 0 24px; }
-  .step, .step:first-child, .step:last-child {
+  .step, .step:last-child {
     min-height: 38svh;
     padding: 0;
     align-items: center;

@@ -5,11 +5,11 @@
   const stage = document.querySelector('.stage')
   const strip = document.querySelector('.stage .strip')
   const still = matchMedia('(prefers-reduced-motion: reduce)')
+  const narrow = matchMedia('(max-width: 820px)')
   let active = -1
   const update = () => {
     const vh = window.innerHeight
-    const pinnedTop = stage.style.order !== undefined && getComputedStyle(stage).order === '-1'
-    const top = pinnedTop ? stage.getBoundingClientRect().bottom : 0
+    const top = narrow.matches ? Math.max(0, stage.getBoundingClientRect().bottom) : 0
     const ref = (top + vh) / 2
     const centers = steps.map((s) => {
       const r = s.querySelector('h2').getBoundingClientRect()
