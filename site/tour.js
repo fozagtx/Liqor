@@ -1,40 +1,41 @@
-// Slides the pinned Seeker's screens in step with the scroll: each screen holds while its step
-// sits in the middle of the view, then glides to the next one at the same pace every time.
+// The pinned Seeker shows the screens for the step in view, and moves to the next one every 2 seconds.
 (() => {
   const steps = [...document.querySelectorAll('.step')]
   const stage = document.querySelector('.stage')
-  const strip = document.querySelector('.stage .strip')
+  const shots = [...document.querySelectorAll('.stage .screen img')]
   const still = matchMedia('(prefers-reduced-motion: reduce)')
   const narrow = matchMedia('(max-width: 820px)')
+  const groups = steps.map((_, i) => shots.filter((img) => Number(img.dataset.step) === i))
   let active = -1
-  const update = () => {
-    const vh = window.innerHeight
-    const top = narrow.matches ? Math.max(0, stage.getBoundingClientRect().bottom) : 0
-    const ref = (top + vh) / 2
-    const centers = steps.map((s) => {
-      const r = s.querySelector('h2').getBoundingClientRect()
-      return r.top + r.height / 2
-    })
-    let pos = 0
-    if (ref >= centers[centers.length - 1]) pos = centers.length - 1
-    else {
-      for (let i = 0; i < centers.length - 1; i++) {
-        if (ref >= centers[i] && ref < centers[i + 1]) {
-          const f = (ref - centers[i]) / (centers[i + 1] - centers[i])
-          const t = Math.min(1, Math.max(0, (f - 0.3) / 0.4))
-          pos = i + t * t * (3 - 2 * t)
-          break
-        }
-      }
-    }
-    if (still.matches) pos = Math.round(pos)
-    strip.style.transform = `translate3d(${-pos * 100}%, 0, 0)`
-    const now = Math.round(pos)
-    if (now !== active) {
-      active = now
-      steps.forEach((s, i) => s.classList.toggle('is-active', i === now))
-    }
+  let shown = 0
+  let timer = 0
+
+  const show = (img) => shots.forEach((s) => s.classList.toggle('is-on', s === img))
+
+  const tick = () => {
+    const group = groups[active]
+    if (group.length < 2) return
+    shown = (shown + 1) % group.length
+    show(group[shown])
   }
+
+  const update = () => {
+    const top = narrow.matches ? Math.max(0, stage.getBoundingClientRect().bottom) : 0
+    const ref = (top + window.innerHeight) / 2
+    let now = 0
+    steps.forEach((s, i) => {
+      const r = s.querySelector('h2').getBoundingClientRect()
+      if (r.top + r.height / 2 <= ref) now = i
+    })
+    if (now === active) return
+    active = now
+    shown = 0
+    steps.forEach((s, i) => s.classList.toggle('is-active', i === now))
+    show(groups[now][0])
+    clearInterval(timer)
+    if (!still.matches) timer = setInterval(tick, 2000)
+  }
+
   let queued = false
   const schedule = () => {
     if (queued) return
@@ -44,6 +45,7 @@
       update()
     })
   }
+
   window.addEventListener('scroll', schedule, { passive: true })
   window.addEventListener('resize', schedule)
   update()

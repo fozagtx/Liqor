@@ -141,22 +141,6 @@ h1 {
 
 .phone .screen img.is-on { opacity: 1; transform: none; }
 
-/* every screen sits side by side; scrolling slides the strip one screen per step */
-.phone .strip {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  will-change: transform;
-}
-
-.phone .strip img {
-  position: relative;
-  flex: 0 0 100%;
-  opacity: 1;
-  transform: none;
-  transition: none;
-}
-
 .phone .frame {
   position: absolute;
   inset: 0;
