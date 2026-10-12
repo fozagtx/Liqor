@@ -31,6 +31,23 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [35], qualifiers = "w400dp-h890dp-xxhdpi")
 class BubbleSnapshotTest {
     @Test
+    fun bubbleIdle() = captureScreen("bubble_idle") {
+        androidx.compose.foundation.layout.Box(
+            Modifier.fillMaxSize().background(Ground).padding(8.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Bubble(
+                BubbleUi(
+                    value = "–",
+                    state = BubbleState.Idle,
+                    cushion = 1f,
+                    animateDanger = false,
+                ),
+            )
+        }
+    }
+
+    @Test
     fun bubbleRotationStartsWithFirstAffectedPositionWhenStatic() =
         captureScreen("bubble_rotation") {
             androidx.compose.foundation.layout.Box(

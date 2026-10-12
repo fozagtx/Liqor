@@ -42,4 +42,8 @@ class PanelSnapshotTest {
     @Test
     fun couldNotCheckPanelShowsLastSuccessfulCheck() =
         capturePanel("panel_could_not_check", Reading.CouldNotCheck, Freshness.Unknown, 121)
+
+    @Test
+    fun noPositionsPanelShowsLastCheckedTime() =
+        capturePanel("panel_no_positions", Reading.NoPositions, Freshness.Fresh, 12)
 }

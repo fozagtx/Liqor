@@ -78,6 +78,7 @@ import com.liqor.domain.Level
 import com.liqor.domain.Reading
 import com.liqor.domain.Watched
 import com.liqor.domain.sentence
+import com.liqor.ui.BubbleState
 import com.liqor.ui.BubbleUi
 import com.liqor.ui.bubbleUi
 import com.liqor.ui.closestPosition
@@ -111,7 +112,7 @@ class WatchService : LifecycleService() {
     private var reading: Reading = Reading.CouldNotCheck
     private var freshness = Freshness.Unknown
     private var lastSuccessfulServerTime: Instant? = null
-    private var bubbleUi by mutableStateOf(BubbleUi("–", com.liqor.ui.BubbleState.Unknown, 0f))
+    private var bubbleUi by mutableStateOf(BubbleUi("–", BubbleState.Unknown, 0f))
     private var panelReading by mutableStateOf<Reading>(Reading.CouldNotCheck)
     private var panelFreshness by mutableStateOf(Freshness.Unknown)
     private var panelAgeSeconds by mutableStateOf<Long?>(null)
@@ -228,8 +229,8 @@ class WatchService : LifecycleService() {
         removePanel()
         removeBubble()
         removeHideTarget()
-        screenOnRequests.close()
         serviceScope.cancel()
+        screenOnRequests.close()
         super.onDestroy()
     }
 
@@ -238,11 +239,11 @@ class WatchService : LifecycleService() {
             fetchLive()
             val danger = (reading as? Reading.Live)?.watched?.any { it.level == Level.Danger } == true
             val interval = when {
-                reading == Reading.NoPositions || !screenOn -> 60_000L
+                !screenOn -> 60_000L
                 danger || panelOpen -> 5_000L
                 else -> 15_000L
             }
-            withTimeoutOrNull(interval) { screenOnRequests.receive() }
+            withTimeoutOrNull(interval) { screenOnRequests.receiveCatching() }
         }
     }
 
@@ -277,8 +278,16 @@ class WatchService : LifecycleService() {
         if (prefs.mode != Prefs.MODE_LIVE) return
         val wallet = prefs.walletAddress
         reading = if (wallet == null) Reading.CouldNotCheck else reader.positions(wallet)
-        (reading as? Reading.Live)?.let { lastSuccessfulServerTime = it.serverTime }
-        freshness = if (reading is Reading.Live) freshness else Freshness.Unknown
+        when (val current = reading) {
+            is Reading.Live -> lastSuccessfulServerTime = current.serverTime
+            Reading.NoPositions -> lastSuccessfulServerTime = Instant.now()
+            Reading.CouldNotCheck -> Unit
+        }
+        freshness = when (reading) {
+            is Reading.Live -> freshness
+            Reading.NoPositions -> Freshness.Fresh
+            Reading.CouldNotCheck -> Freshness.Unknown
+        }
 
         when (val current = reading) {
             is Reading.Live -> {
@@ -300,7 +309,6 @@ class WatchService : LifecycleService() {
                 }
             }
             Reading.NoPositions -> {
-                removeBubble()
                 alertGate.observe(Level.Safe)
             }
             Reading.CouldNotCheck -> Unit
@@ -310,10 +318,6 @@ class WatchService : LifecycleService() {
     }
 
     private fun updateSurfaces() {
-        if (reading == Reading.NoPositions) {
-            removeBubble()
-            return
-        }
         if (prefs.hidden) {
             removeBubble()
         } else {
@@ -325,7 +329,7 @@ class WatchService : LifecycleService() {
     private fun currentBubbleUi(): BubbleUi = bubbleUi(reading, freshness)
 
     private fun showBubble() {
-        if (!Settings.canDrawOverlays(this) || reading == Reading.NoPositions || prefs.hidden) return
+        if (!Settings.canDrawOverlays(this) || prefs.hidden) return
         bubbleUi = currentBubbleUi()
         if (bubbleView != null) return
         val view = createComposeView()
@@ -345,12 +349,12 @@ class WatchService : LifecycleService() {
             updateBubbleGestureExclusion(changed)
             val padding = bubbleShadowPaddingPx()
             val diameter = bubbleDiameterPx()
-            val contentWidth = changed.width - 2 * padding
+            val contentWidth = (changed.width - 2 * padding).coerceAtLeast(diameter)
             val left = padding + ((contentWidth - diameter).coerceAtLeast(0) / 2)
             val params = bubbleParams
             if (bubbleView === changed && params != null && changed.height > 0) {
                 val contentHeight = (changed.height - 2 * padding).coerceAtLeast(diameter)
-                val bubbleBounds = bubbleBounds(contentHeight, left)
+                val bubbleBounds = bubbleBounds(contentHeight, left, contentWidth)
                 val clamped = bubbleBounds.clampResting(params.x, params.y)
                 if (clamped.x != params.x || clamped.y != params.y) {
                     params.x = clamped.x
@@ -389,6 +393,7 @@ class WatchService : LifecycleService() {
                     val clamped = bubbleBounds(
                         contentHeight = bubbleContentHeightPx(view),
                         circleLeft = bubbleCircleLeft(view),
+                        contentWidth = bubbleContentWidthPx(view),
                     ).clampDrag(
                         x = params.x + amount.x.toInt(),
                         y = params.y + amount.y.toInt(),
@@ -415,7 +420,11 @@ class WatchService : LifecycleService() {
         val insets = safeInsets()
         val padding = bubbleShadowPaddingPx()
         val contentHeight = bubbleContentHeightPx(view)
-        val bubbleBounds = bubbleBounds(contentHeight, bubbleCircleLeft(view))
+        val bubbleBounds = bubbleBounds(
+            contentHeight,
+            bubbleCircleLeft(view),
+            bubbleContentWidthPx(view),
+        )
         val dragPosition = bubbleBounds.clampDrag(params.x, params.y)
         params.x = dragPosition.x
         params.y = dragPosition.y
@@ -472,13 +481,17 @@ class WatchService : LifecycleService() {
         val padding = bubbleShadowPaddingPx()
         val diameter = bubbleDiameterPx()
         val contentHeight = diameter + bubbleTagHeightPx()
-        val bounds = bubbleBounds(contentHeight, padding)
+        val bounds = bubbleBounds(contentHeight, padding, diameter)
         params.x = if (prefs.bubbleSide == Prefs.SIDE_LEFT) bounds.minX else bounds.maxX
         params.y = bounds.minY + ((bounds.maxY - bounds.minY) * prefs.bubbleYFraction).toInt()
     }
 
     private fun bubbleTagHeightPx(): Int =
-        if (bubbleUi.asset != null && bubbleUi.side != null) dpToPixels(20) else 0
+        if (bubbleUi.state == BubbleState.Idle || (bubbleUi.asset != null && bubbleUi.side != null)) {
+            dpToPixels(20)
+        } else {
+            0
+        }
 
     private fun bubbleContentHeightPx(view: View? = bubbleView): Int {
         val padding = bubbleShadowPaddingPx()
@@ -493,7 +506,16 @@ class WatchService : LifecycleService() {
         return padding + ((contentWidth - diameter).coerceAtLeast(0) / 2)
     }
 
-    private fun bubbleBounds(contentHeight: Int, circleLeft: Int): OverlayBounds {
+    private fun bubbleContentWidthPx(view: View?): Int {
+        val padding = bubbleShadowPaddingPx()
+        return ((view?.width ?: 0) - 2 * padding).coerceAtLeast(bubbleDiameterPx())
+    }
+
+    private fun bubbleBounds(
+        contentHeight: Int,
+        circleLeft: Int,
+        contentWidth: Int,
+    ): OverlayBounds {
         val screen = windowManager.currentWindowMetrics.bounds
         val insets = safeInsets()
         return OverlayBounds.calculate(
@@ -508,6 +530,8 @@ class WatchService : LifecycleService() {
             circleLeft = circleLeft,
             diameter = bubbleDiameterPx(),
             contentHeight = contentHeight,
+            contentLeft = bubbleShadowPaddingPx(),
+            contentWidth = contentWidth,
         )
     }
 

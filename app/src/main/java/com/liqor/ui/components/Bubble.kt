@@ -64,7 +64,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private data class BubbleTag(
-    val asset: String,
+    val asset: String?,
     val text: String,
     val background: Color,
 )
@@ -95,6 +95,7 @@ fun Bubble(
     val asset = displayUi.asset
     val side = displayUi.side
     val tagText = when {
+        displayUi.state == BubbleState.Idle -> stringResource(R.string.bubble_no_positions)
         displayUi.state == BubbleState.Unknown || displayUi.state == BubbleState.Sample -> null
         asset == null || asset.isBlank() -> null
         side == "long" -> stringResource(R.string.bubble_tag_long, asset)
@@ -102,6 +103,8 @@ fun Bubble(
         else -> null
     }
     val bubbleDescription = when {
+        displayUi.state == BubbleState.Idle ->
+            stringResource(R.string.bubble_no_positions_content_description)
         displayUi.state == BubbleState.Unknown ->
             stringResource(R.string.bubble_unknown_content_description)
         displayUi.state == BubbleState.Sample && asset != null && side != null ->
@@ -133,7 +136,7 @@ fun Bubble(
         BubbleState.Safe, BubbleState.Sample -> Safe
         BubbleState.Caution -> Caution
         BubbleState.Danger -> Danger
-        BubbleState.Stale, BubbleState.Unknown -> Stale
+        BubbleState.Stale, BubbleState.Idle, BubbleState.Unknown -> Stale
     }
     val disc = if (displayUi.state == BubbleState.Danger) Danger else Raised
     val numberColor = if (displayUi.state == BubbleState.Danger) Raised else TextPrimary
@@ -145,14 +148,18 @@ fun Bubble(
         tween(Motion.BubblePositionChange),
         label = "bubble-ring",
     )
-    val tag = if (asset != null && tagText != null) {
-        BubbleTag(
+    val tag = when {
+        displayUi.state == BubbleState.Idle && tagText != null -> BubbleTag(
+            asset = null,
+            text = tagText,
+            background = TextPrimary,
+        )
+        asset != null && tagText != null -> BubbleTag(
             asset = asset,
             text = tagText,
             background = if (displayUi.state == BubbleState.Stale) Stale else TextPrimary,
         )
-    } else {
-        null
+        else -> null
     }
     val halo = remember { Animatable(0f) }
     val shouldAnimate = !LocalReducedMotion.current && LocalAnimatedScope.current != null
@@ -172,17 +179,19 @@ fun Bubble(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .graphicsLayer {
-                        val alpha = halo.value * 0.22f
-                        this.alpha = alpha
-                        scaleX = 1f + halo.value * 0.2f
-                        scaleY = 1f + halo.value * 0.2f
-                    }
-                    .background(Danger, CircleShape),
-            )
+            if (displayUi.state == BubbleState.Danger) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val alpha = halo.value * 0.22f
+                            this.alpha = alpha
+                            scaleX = 1f + halo.value * 0.2f
+                            scaleY = 1f + halo.value * 0.2f
+                        }
+                        .background(Danger, CircleShape),
+                )
+            }
             Box(
                 modifier = Modifier
                     .size(56.dp)
@@ -192,7 +201,7 @@ fun Bubble(
                 contentAlignment = Alignment.Center,
             ) {
                 Gauge(
-                    cushion = displayUi.cushion,
+                    cushion = if (displayUi.state == BubbleState.Idle) 1f else displayUi.cushion,
                     color = animatedColor,
                     diameter = 56.dp,
                     stroke = 2.dp,
@@ -236,7 +245,7 @@ fun Bubble(
                                 maxLines = 1,
                             )
                         }
-                        if (displayUi.state != BubbleState.Unknown) {
+                        if (displayUi.state != BubbleState.Unknown && displayUi.state != BubbleState.Idle) {
                             Text(
                                 text = stringResource(R.string.percent_sign),
                                 color = numberColor,
@@ -291,21 +300,26 @@ fun Bubble(
                     Row(
                         modifier = Modifier
                             .offset(y = (-4).dp)
-                            .widthIn(max = 76.dp)
+                            .widthIn(max = if (currentTag.asset == null) 88.dp else 76.dp)
                             .clip(CircleShape)
                             .background(currentTag.background)
                             .padding(start = 3.dp, end = 6.dp, top = 2.dp, bottom = 2.dp),
                         horizontalArrangement = Arrangement.spacedBy(3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        CoinLogo(currentTag.asset, 12.dp)
+                        currentTag.asset?.let { CoinLogo(it, 12.dp) }
                         Text(
                             text = currentTag.text,
                             color = Raised,
                             style = TypeRamp.label,
                             textAlign = TextAlign.Center,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            softWrap = currentTag.asset != null,
+                            overflow = if (currentTag.asset == null) {
+                                TextOverflow.Clip
+                            } else {
+                                TextOverflow.Ellipsis
+                            },
                         )
                     }
                 }

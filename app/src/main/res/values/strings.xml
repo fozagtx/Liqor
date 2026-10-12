@@ -11,6 +11,8 @@
     <string name="bubble_sample_content_description">Sample position. %1$s %2$s, %3$s%% from liquidation</string>
     <string name="bubble_sample_description">Sample position</string>
     <string name="bubble_unknown_content_description">Position distance unavailable</string>
+    <string name="bubble_no_positions">No positions</string>
+    <string name="bubble_no_positions_content_description">No open positions</string>
     <string name="level_safe">Safe</string>
     <string name="level_caution">Caution</string>
     <string name="level_danger">Danger</string>
@@ -29,7 +31,7 @@
     <string name="position_details_beta">%1$dx · Beta · %2$s</string>
     <string name="turn_on_bubble">Turn on the bubble</string>
     <string name="no_positions_headline">No open positions yet.</string>
-    <string name="no_positions_body">Your bubble appears when you open one.</string>
+    <string name="no_positions_body">Your bubble shows the distance once you open one.</string>
     <string name="step_one_of_two">STEP 1 OF 2</string>
     <string name="overlay_title">Let Liqor sit on top of other apps.</string>
     <string name="overlay_body">Android opens a settings page. Turn on the switch next to Liqor, then come back.</string>

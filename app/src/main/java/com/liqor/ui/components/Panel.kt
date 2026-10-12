@@ -81,7 +81,7 @@ fun Panel(
             Spacer(Modifier.height(10.dp))
             PanelFooter(
                 ageSeconds = ageSeconds,
-                lastChecked = reading == Reading.CouldNotCheck,
+                lastChecked = reading == Reading.CouldNotCheck || reading == Reading.NoPositions,
                 unknown = freshness == Freshness.Unknown || reading == Reading.CouldNotCheck,
                 onOpenJupiter = onOpenJupiter,
             )

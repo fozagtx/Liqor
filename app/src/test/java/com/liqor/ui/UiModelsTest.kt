@@ -43,6 +43,14 @@ class UiModelsTest {
         assertEquals(emptyList<BubbleUi>(), ui.rotation)
     }
 
+    @Test
+    fun noPositionsMapsToIdleRegardlessOfFreshness() {
+        val expected = BubbleUi(value = "–", state = BubbleState.Idle, cushion = 1f)
+
+        assertEquals(expected, bubbleUi(Reading.NoPositions, Freshness.Fresh))
+        assertEquals(expected, bubbleUi(Reading.NoPositions, Freshness.Unknown))
+    }
+
     private fun watched(asset: String, distance: Double, level: Level) = Watched(
         position = samplePosition.position.copy(asset = asset, address = asset),
         distance = distance,

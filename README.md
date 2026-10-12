@@ -1,6 +1,6 @@
 # Liqor
 
-**[Download the APK (v0.1.5)](https://liqorapp.xyz/liqor-v0.1.5.apk)** · **[Website](https://liqorapp.xyz)** · **[Designs](#designs)**
+**[Download the APK (v0.1.6)](https://liqorapp.xyz/liqor-v0.1.6.apk)** · **[Website](https://liqorapp.xyz)** · **[Designs](#designs)**
 
 Liqor shows how far you are from liquidation in a small bubble that floats over any app on your Solana Seeker.
 

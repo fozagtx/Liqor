@@ -11,6 +11,7 @@ enum class BubbleState {
     Caution,
     Danger,
     Stale,
+    Idle,
     Unknown,
     Sample,
 }
@@ -29,6 +30,9 @@ fun bubbleUi(
     reading: Reading,
     freshness: Freshness,
 ): BubbleUi {
+    if (reading == Reading.NoPositions) {
+        return BubbleUi(value = "–", state = BubbleState.Idle, cushion = 1f)
+    }
     val live = reading as? Reading.Live ?: return BubbleUi("–", BubbleState.Unknown, 0f)
     val closest = live.watched.minByOrNull { it.distance }
         ?: return BubbleUi("–", BubbleState.Unknown, 0f)

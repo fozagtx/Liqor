@@ -149,7 +149,7 @@ class MainActivity : ComponentActivity() {
                                     PositionsFoundScreen(
                                         live,
                                         onTurnOnBubble = ::beginOverlaySetup,
-                                        wallet = shortAddress(checkNotNull(walletAddress)),
+                                        wallet = walletAddress?.let(::shortAddress).orEmpty(),
                                     )
                                 } else {
                                     LoadingScreen()
@@ -181,7 +181,7 @@ class MainActivity : ComponentActivity() {
                             )
                             AppScreen.Home -> HomeScreen(
                                 reading = reading,
-                                wallet = shortAddress(checkNotNull(walletAddress)),
+                                wallet = walletAddress?.let(::shortAddress).orEmpty(),
                                 bubbleOn = bubbleOn,
                                 onBubbleChange = ::changeBubbleEnabled,
                                 onRetry = ::refreshPositions,
@@ -370,6 +370,7 @@ class MainActivity : ComponentActivity() {
             prefs.watchingEnabled = false
             stopWatching()
         } else if (Settings.canDrawOverlays(this)) {
+            prefs.hidden = false
             prefs.watchingEnabled = true
             startWatching()
         } else {

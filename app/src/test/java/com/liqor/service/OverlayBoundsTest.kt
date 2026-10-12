@@ -31,6 +31,28 @@ class OverlayBoundsTest {
     }
 
     @Test
+    fun restingBoundsKeepWideContentInsideBothMargins() {
+        val screenWidth = 1_000
+        val leftInset = 24
+        val rightInset = 36
+        val contentWidth = DIAMETER + 32
+        val bounds = bounds(
+            screenWidth = screenWidth,
+            leftInset = leftInset,
+            rightInset = rightInset,
+            circleLeft = SHADOW_PADDING + 16,
+            contentLeft = SHADOW_PADDING,
+            contentWidth = contentWidth,
+        )
+
+        assertEquals(leftInset + MARGIN, bounds.minX + SHADOW_PADDING)
+        assertEquals(
+            screenWidth - rightInset - MARGIN,
+            bounds.maxX + SHADOW_PADDING + contentWidth,
+        )
+    }
+
+    @Test
     fun dragClampKeepsTopSafeAndCanReachTheBottom() {
         val bounds = bounds(screenHeight = 1_000, topInset = 24, bottomInset = 20)
 
@@ -55,6 +77,8 @@ class OverlayBoundsTest {
         rightInset: Int = 0,
         bottomInset: Int = 0,
         circleLeft: Int = 8,
+        contentLeft: Int = circleLeft,
+        contentWidth: Int = DIAMETER,
     ) = OverlayBounds.calculate(
         screenWidth = screenWidth,
         screenHeight = screenHeight,
@@ -67,6 +91,8 @@ class OverlayBoundsTest {
         circleLeft = circleLeft,
         diameter = DIAMETER,
         contentHeight = DIAMETER,
+        contentLeft = contentLeft,
+        contentWidth = contentWidth,
     )
 
     private companion object {

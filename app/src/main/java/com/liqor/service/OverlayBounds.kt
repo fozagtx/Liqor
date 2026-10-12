@@ -33,9 +33,14 @@ data class OverlayBounds(
             circleLeft: Int,
             diameter: Int,
             contentHeight: Int,
+            contentLeft: Int = circleLeft,
+            contentWidth: Int = diameter,
         ): OverlayBounds {
-            val minX = leftInset + margin - circleLeft
-            val maxX = (screenWidth - rightInset - margin - circleLeft - diameter)
+            val minX = leftInset + margin - minOf(circleLeft, contentLeft)
+            val maxX = (screenWidth - rightInset - margin - maxOf(
+                circleLeft + diameter,
+                contentLeft + contentWidth,
+            ))
                 .coerceAtLeast(minX)
             val minY = topInset + margin - shadowPadding
             val maxY = (screenHeight - bottomInset - margin - contentHeight - shadowPadding)
